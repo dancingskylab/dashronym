@@ -38,15 +38,15 @@
 /// * Marker-wrapped acronyms are recognized per [DashronymConfig.acceptMarkers]
 ///   (e.g., `(SDK)`, `"API"`, `'API'`). When [DashronymConfig.enableBareAcronyms]
 ///   is `true`, bare ALL-CAPS words within length bounds also match.
-/// * Tooltips announce show/hide events to assistive tech when localized
-///   strings are available.
+/// * Tooltips announce their definition on supported assistive-technology
+///   platforms and expose a semantic live region elsewhere.
 /// * Styling (underline, thickness, offsets, fade durations, card size) is
 ///   controlled via [DashronymTheme].
 library;
 
-export 'src/config.dart';
+export 'dashronym_core.dart';
 export 'src/dashronym_text.dart';
-export 'src/registry.dart';
+export 'src/dashronym_scope.dart';
 export 'src/text_extension.dart';
 export 'src/dashronym_theme.dart';
 export 'src/dashronym_localizations.dart';

@@ -31,8 +31,8 @@ void main() {
     );
 
     final semantics = tester.getSemantics(find.byType(DashronymTooltipCard));
-    expect(semantics.label, contains('Definition for SDK'));
-    expect(semantics.value, contains('Software Development Kit'));
+    expect(semantics.label, 'Definition for SDK');
+    expect(semantics.value, 'Software Development Kit');
 
     await tester.tap(find.byTooltip('Hide definition for SDK'));
     await tester.pump();

@@ -4,10 +4,12 @@
 /// honored, and how bare uppercase words are interpreted.
 ///
 /// Matching modes:
-/// * Marker-based: detects acronyms wrapped by accepted pairs from [acceptMarkers]
-///   (e.g., `"()"` recognizes `(SDK)`).
+/// * Marker-based: detects registered terms wrapped by accepted pairs from
+///   [acceptMarkers] (e.g., `"()"` recognizes `(SDK)`, `(C++)`, and
+///   `(OAuth)`). Explicit terms may contain punctuation or mixed case, but
+///   never an embedded line break.
 /// * Bare acronyms: when [enableBareAcronyms] is `true`, matches ALL-CAPS
-///   words within [minLen]…[maxLen].
+///   ASCII words within [minLen]…[maxLen].
 ///
 /// Invariants:
 /// * [minLen] > 0
@@ -71,10 +73,14 @@ class DashronymConfig {
   /// [maxLen]) are considered even without marker characters.
   final bool enableBareAcronyms;
 
-  /// Minimum allowed length for a bare acronym match.
+  /// Minimum allowed length for an explicit or bare acronym match.
+  ///
+  /// Length is measured in Unicode scalar values.
   final int minLen;
 
-  /// Maximum allowed length for a bare acronym match.
+  /// Maximum allowed length for an explicit or bare acronym match.
+  ///
+  /// Length is measured in Unicode scalar values.
   final int maxLen;
 
   /// Marker pairs recognized by the parser.

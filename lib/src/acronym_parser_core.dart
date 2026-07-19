@@ -18,7 +18,7 @@ class DashronymParserCore {
     required this.config,
     int cacheCapacity = 256,
   }) : _cache = Lru<String, List<DashronymToken>>(capacity: cacheCapacity),
-       _markerRegexes = _createMarkerRegexes(config);
+       _markerPairs = _createMarkerPairs(config);
 
   /// Dictionary of acronyms and their descriptions used for matching.
   final AcronymRegistry registry;
@@ -28,7 +28,7 @@ class DashronymParserCore {
   final DashronymConfig config;
 
   final Lru<String, List<DashronymToken>> _cache;
-  final List<RegExp> _markerRegexes;
+  final List<_MarkerPair> _markerPairs;
 
   static final RegExp _bareAcronym = RegExp(r'\b([A-Z]{2,})\b');
 
@@ -59,17 +59,22 @@ class DashronymParserCore {
       var matched = false;
 
       // Try marker-based matches first.
-      for (final rx in _markerRegexes) {
-        final m = rx.matchAsPrefix(input, i);
-        if (m != null) {
-          final ac = m.group(1)!;
+      for (final marker in _markerPairs) {
+        final markerMatch = marker.matchAsPrefix(
+          input,
+          i,
+          minLength: config.minLen,
+          maxLength: config.maxLen,
+        );
+        if (markerMatch != null) {
+          final ac = markerMatch.acronym;
           final description = registry.descriptionOf(ac);
           if (description != null) {
             flushBuffer();
             tokens.add(
               AcronymToken(acronym: ac, description: description),
             );
-            i = m.end;
+            i = markerMatch.end;
             matched = true;
             break;
           }
@@ -108,20 +113,72 @@ class DashronymParserCore {
     return result;
   }
 
-  static List<RegExp> _createMarkerRegexes(DashronymConfig config) {
+  static List<_MarkerPair> _createMarkerPairs(DashronymConfig config) {
     config.validate();
 
-    return List<RegExp>.unmodifiable(
+    return List<_MarkerPair>.unmodifiable(
       config.acceptMarkers.map((pair) {
         final [left, right] = pair.runes
             .map(String.fromCharCode)
             .toList(growable: false);
-        return RegExp(
-          '${RegExp.escape(left)}'
-          '([A-Za-z0-9]{${config.minLen},${config.maxLen}})'
-          '${RegExp.escape(right)}',
+        return _MarkerPair(
+          left: left,
+          right: right,
+          rightScalar: right.runes.single,
         );
       }),
     );
   }
+}
+
+final class _MarkerPair {
+  const _MarkerPair({
+    required this.left,
+    required this.right,
+    required this.rightScalar,
+  });
+
+  final String left;
+  final String right;
+  final int rightScalar;
+
+  _MarkerMatch? matchAsPrefix(
+    String input,
+    int start, {
+    required int minLength,
+    required int maxLength,
+  }) {
+    if (!input.startsWith(left, start)) return null;
+
+    final contentStart = start + left.length;
+    // Always use the first closing delimiter. An invalid or unknown candidate
+    // must not consume a later closer to manufacture a different match.
+    final iterator = RuneIterator.at(input, contentStart);
+    var scalarLength = 0;
+    while (iterator.moveNext()) {
+      final scalar = iterator.current;
+      if (scalar == rightScalar) {
+        if (scalarLength < minLength) return null;
+        return _MarkerMatch(
+          acronym: input.substring(contentStart, iterator.rawIndex),
+          end: iterator.rawIndex + right.length,
+        );
+      }
+      if (_isLineBreak(scalar)) return null;
+      scalarLength++;
+      if (scalarLength > maxLength) return null;
+    }
+
+    return null;
+  }
+
+  static bool _isLineBreak(int scalar) =>
+      scalar == 0x0A || scalar == 0x0D || scalar == 0x2028 || scalar == 0x2029;
+}
+
+final class _MarkerMatch {
+  const _MarkerMatch({required this.acronym, required this.end});
+
+  final String acronym;
+  final int end;
 }

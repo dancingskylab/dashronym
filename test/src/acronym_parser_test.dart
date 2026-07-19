@@ -1,4 +1,5 @@
 import 'package:dashronym/dashronym.dart';
+import 'package:dashronym/src/acronym_inline.dart';
 import 'package:dashronym/src/acronym_parser.dart';
 import 'package:dashronym/src/acronym_parser_core.dart';
 import 'package:dashronym/src/acronym_tokens.dart';
@@ -18,6 +19,10 @@ void main() {
 
     final widgetSpans = spans.whereType<WidgetSpan>().toList(growable: false);
     expect(widgetSpans, hasLength(1));
+    expect(
+      (widgetSpans.single.child as AcronymInline).textScaler,
+      TextScaler.noScaling,
+    );
     expect(
       spans.map((span) => span.runtimeType),
       containsAll([TextSpan, WidgetSpan]),
@@ -142,6 +147,126 @@ void main() {
     );
   });
 
+  group('explicit marker matching', () {
+    test('accepts registered punctuation and mixed-case terms', () {
+      final parser = DashronymParserCore(
+        registry: AcronymRegistry({
+          'C++': 'C Plus Plus',
+          '.NET': 'Microsoft .NET',
+          'R&D': 'Research and Development',
+          'OAuth': 'Open Authorization',
+        }),
+        config: const DashronymConfig(),
+      );
+
+      expect(
+        parser.parse('Use (C++), (.NET), (R&D), and (OAuth).'),
+        const [
+          TextToken('Use '),
+          AcronymToken(acronym: 'C++', description: 'C Plus Plus'),
+          TextToken(', '),
+          AcronymToken(acronym: '.NET', description: 'Microsoft .NET'),
+          TextToken(', '),
+          AcronymToken(
+            acronym: 'R&D',
+            description: 'Research and Development',
+          ),
+          TextToken(', and '),
+          AcronymToken(acronym: 'OAuth', description: 'Open Authorization'),
+          TextToken('.'),
+        ],
+      );
+    });
+
+    test('resolves aliases and honors registry case sensitivity', () {
+      final entry = AcronymEntry(
+        acronym: 'DOTNET',
+        expansion: 'Microsoft .NET',
+        aliases: const ['.NET'],
+      );
+      final insensitive = DashronymParserCore(
+        registry: AcronymRegistry.fromAcronymEntries([entry]),
+        config: const DashronymConfig(),
+      );
+      final sensitive = DashronymParserCore(
+        registry: AcronymRegistry.fromAcronymEntries(
+          [entry],
+          caseInsensitive: false,
+        ),
+        config: const DashronymConfig(),
+      );
+
+      expect(
+        insensitive.parse('(.net)'),
+        const [
+          AcronymToken(acronym: '.net', description: 'Microsoft .NET'),
+        ],
+      );
+      expect(sensitive.parse('(.net)'), const [TextToken('(.net)')]);
+      expect(
+        sensitive.parse('(.NET)'),
+        const [
+          AcronymToken(acronym: '.NET', description: 'Microsoft .NET'),
+        ],
+      );
+    });
+
+    test('measures explicit terms in Unicode scalar values', () {
+      final parser = DashronymParserCore(
+        registry: AcronymRegistry({
+          'X': 'One scalar',
+          'A😀': 'Two scalars',
+          'C++': 'Three scalars',
+          'OAuth': 'Five scalars',
+        }),
+        config: const DashronymConfig(minLen: 2, maxLen: 3),
+      );
+
+      expect(
+        parser.parse('(X) (A😀) (C++) (OAuth)'),
+        const [
+          TextToken('(X) '),
+          AcronymToken(acronym: 'A😀', description: 'Two scalars'),
+          TextToken(' '),
+          AcronymToken(acronym: 'C++', description: 'Three scalars'),
+          TextToken(' (OAuth)'),
+        ],
+      );
+    });
+
+    test(
+      'uses the earliest closer and preserves unknown markers literally',
+      () {
+        const input = '(A)B) (unknown)';
+        final parser = DashronymParserCore(
+          registry: AcronymRegistry({
+            'A)B': 'Must not skip the first closer',
+          }),
+          config: const DashronymConfig(),
+        );
+
+        expect(parser.parse(input), const [TextToken(input)]);
+      },
+    );
+
+    test('rejects registered terms containing line breaks', () {
+      for (final lineBreak in const ['\n', '\r', '\u2028', '\u2029']) {
+        final acronym = 'OAuth${lineBreak}2';
+        final input = '($acronym)';
+        final parser = DashronymParserCore(
+          registry: AcronymRegistry({acronym: 'Must not cross a line break'}),
+          config: const DashronymConfig(),
+        );
+
+        expect(
+          parser.parse(input),
+          [TextToken(input)],
+          reason: 'U+${lineBreak.runes.single.toRadixString(16)}',
+        );
+      }
+    });
+  });
+
   test('DashronymParser matches bare acronyms within length bounds', () {
     final parser = DashronymParser(
       registry: AcronymRegistry({
@@ -161,5 +286,51 @@ void main() {
     final widgetSpans = spans.whereType<WidgetSpan>().toList(growable: false);
 
     expect(widgetSpans.length, 2);
+  });
+
+  test('bare matching remains conservative ALL-CAPS ASCII', () {
+    final parser = DashronymParserCore(
+      registry: AcronymRegistry({
+        'OAuth': 'Open Authorization',
+        'C++': 'C Plus Plus',
+        '.NET': 'Microsoft .NET',
+        'R&D': 'Research and Development',
+        'API': 'Application Programming Interface',
+      }),
+      config: const DashronymConfig(enableBareAcronyms: true),
+    );
+
+    expect(
+      parser.parse('OAuth C++ .NET R&D API'),
+      const [
+        TextToken('OAuth C++ .NET R&D '),
+        AcronymToken(
+          acronym: 'API',
+          description: 'Application Programming Interface',
+        ),
+      ],
+    );
+  });
+
+  test('DashronymParser threads rich entries into inline widgets', () {
+    final entry = AcronymEntry(
+      acronym: 'SDK',
+      expansion: 'Software Development Kit',
+      definition: 'Tools used to build software.',
+      tags: const ['software'],
+      source: 'internal-glossary',
+    );
+    final parser = DashronymParser(
+      registry: AcronymRegistry.fromAcronymEntries([entry]),
+      config: const DashronymConfig(enableBareAcronyms: true),
+      theme: const DashronymTheme(),
+      baseStyle: const TextStyle(),
+    );
+
+    final widgetSpan = parser
+        .parseToSpans('SDK')
+        .whereType<WidgetSpan>()
+        .single;
+    expect((widgetSpan.child as AcronymInline).entry, same(entry));
   });
 }

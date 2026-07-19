@@ -32,10 +32,11 @@ class DashronymLocalizations {
     return result ?? DashronymLocalizations(const Locale('en'));
   }
 
-  /// The tooltip message shown beside an inline acronym trigger.
+  /// A legacy combined tooltip message for custom surfaces.
   ///
-  /// The [acronym] and [description] are interpolated into a multi-line
-  /// message so screen readers expose both parts together.
+  /// The stock card renders its title and description separately. This helper
+  /// remains available to custom builders that want the earlier combined
+  /// multi-line wording.
   String tooltipMessage(String acronym, String description) =>
       'Show definition for $acronym.\n$description';
 
@@ -47,22 +48,40 @@ class DashronymLocalizations {
   String semanticsHintHide(String acronym) =>
       'Double tap to hide definition for $acronym.';
 
-  /// The live region announcement used when the tooltip becomes visible.
+  /// The base explicit-announcement phrase for a visible tooltip.
+  ///
+  /// [announceTooltipContent] calls this method so existing localization
+  /// overrides remain effective while the complete definition is announced.
   String announceTooltipShown(String acronym) =>
       'Showing definition for $acronym.';
 
-  /// The live region announcement used after dismissing the tooltip.
+  /// The complete announcement used when the tooltip becomes visible.
+  ///
+  /// This includes the definition so assistive-technology users receive the
+  /// same information as sighted users without having to move focus into the
+  /// tooltip. It builds on [announceTooltipShown], preserving existing custom
+  /// localization overrides.
+  String announceTooltipContent(String acronym, String description) =>
+      '${announceTooltipShown(acronym)} $description';
+
+  /// The explicit announcement used after dismissing the tooltip.
   String announceTooltipHidden(String acronym) =>
       'Closed definition for $acronym.';
 
-  /// The semantics label for the temporary dismiss layer.
+  /// A label available to custom semantic dismiss controls.
+  ///
+  /// Dashronym's built-in outside-tap layer is intentionally excluded from the
+  /// semantics tree, so it does not call this helper.
   String semanticsBarrierLabel(String acronym) =>
       'Hide definition for $acronym.';
 
   /// The tooltip text used on the close button.
   String closeButtonTooltip(String acronym) => 'Hide definition for $acronym';
 
-  /// The semantics label applied to the close button.
+  /// A semantics label available to custom close buttons.
+  ///
+  /// The stock close button uses [closeButtonTooltip], which Flutter also
+  /// exposes to assistive technology.
   String closeButtonLabel(String acronym) => 'Close definition for $acronym';
 
   /// The semantics label applied to the tooltip card container.

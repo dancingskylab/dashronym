@@ -1,7 +1,18 @@
 import 'package:dashronym/dashronym.dart';
 import 'package:dashronym/src/acronym_inline.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+Iterable<InlineSpan> _walkSpans(InlineSpan span) sync* {
+  yield span;
+  if (span case final TextSpan textSpan) {
+    for (final child in textSpan.children ?? const <InlineSpan>[]) {
+      yield* _walkSpans(child);
+    }
+  }
+}
 
 void main() {
   testWidgets('Text.dashronyms wraps strings with tooltip spans', (
@@ -19,18 +30,201 @@ void main() {
     expect(find.byType(AcronymInline), findsOneWidget);
   });
 
-  testWidgets('Text.dashronyms preserves existing rich text', (tester) async {
+  testWidgets('Text.dashronyms preserves an unmatched rich source tree', (
+    tester,
+  ) async {
     final original = Text.rich(
       const TextSpan(text: 'Hello'),
       textScaler: const TextScaler.linear(1.2),
     );
 
-    final result = original.dashronyms(registry: AcronymRegistry({})) as Text;
+    final result =
+        original.dashronyms(registry: AcronymRegistry({})) as DashronymText;
 
-    expect(result.data, isNull);
-    expect(result.textSpan, same(original.textSpan));
+    expect(result.text, isEmpty);
+    expect(result.inlineSpan, same(original.textSpan));
     expect(result.textScaler, const TextScaler.linear(1.2));
   });
+
+  testWidgets(
+    'Text.rich processes nested text and preserves authored span metadata',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      var recognizerInvoked = false;
+      final recognizer = TapGestureRecognizer()
+        ..onTap = () => recognizerInvoked = true;
+      addTearDown(recognizer.dispose);
+      const existingWidget = WidgetSpan(
+        child: SizedBox(
+          key: ValueKey('existing-widget-span'),
+          width: 12,
+          height: 12,
+        ),
+      );
+      const labelledSpan = TextSpan(
+        text: 'SDK',
+        semanticsLabel: 'Author SDK label',
+      );
+      final source = TextSpan(
+        style: const TextStyle(color: Colors.red),
+        children: [
+          TextSpan(
+            text: 'Use API now. ',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+            recognizer: recognizer,
+            locale: const Locale('en'),
+            spellOut: true,
+          ),
+          existingWidget,
+          labelledSpan,
+        ],
+      );
+      final original = Text.rich(
+        source,
+        textScaler: const TextScaler.linear(1.2),
+        semanticsIdentifier: 'rich-copy',
+      );
+      final result = original.dashronyms(
+        registry: AcronymRegistry({
+          'API': 'Application Programming Interface',
+          'SDK': 'Software Development Kit',
+        }),
+        config: const DashronymConfig(enableBareAcronyms: true),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(home: Scaffold(body: result)),
+      );
+
+      expect(find.byType(AcronymInline), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('existing-widget-span')),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .widget<Text>(
+              find.descendant(
+                of: find.byType(AcronymInline),
+                matching: find.text('API'),
+              ),
+            )
+            .style,
+        isA<TextStyle>()
+            .having((style) => style.color, 'color', Colors.red)
+            .having(
+              (style) => style.fontWeight,
+              'fontWeight',
+              FontWeight.bold,
+            ),
+      );
+
+      final richText = tester
+          .widgetList<RichText>(find.byType(RichText))
+          .firstWhere(
+            (widget) => widget.text
+                .toPlainText(includePlaceholders: true)
+                .contains('Use '),
+          );
+      final flattened = _walkSpans(richText.text).toList();
+      expect(
+        flattened.whereType<WidgetSpan>().any(
+          (span) => identical(span, existingWidget),
+        ),
+        isTrue,
+      );
+      expect(flattened.any((span) => identical(span, labelledSpan)), isTrue);
+
+      final preservedPlain = flattened.whereType<TextSpan>().firstWhere(
+        (span) => span.text == 'Use ',
+      );
+      expect(preservedPlain.recognizer, same(recognizer));
+      expect(preservedPlain.locale, const Locale('en'));
+      expect(preservedPlain.spellOut, isTrue);
+      recognizer.onTap!();
+      expect(recognizerInvoked, isTrue);
+
+      expect(
+        labelledSpan.toPlainText(includeSemanticsLabels: true),
+        'Author SDK label',
+      );
+      expect(find.bySemanticsIdentifier('rich-copy'), findsOneWidget);
+      semantics.dispose();
+    },
+  );
+
+  testWidgets('Text.dashronyms inherits registry and config from scope', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: DashronymScope(
+          registry: AcronymRegistry({
+            'API': 'Application Programming Interface',
+          }),
+          config: const DashronymConfig(enableBareAcronyms: true),
+          child: Scaffold(
+            body: const Text('Use API').dashronyms(),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byType(AcronymInline), findsOneWidget);
+  });
+
+  testWidgets(
+    'matched rich span keeps inherited locale, spellOut, and one identifier',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      final source = TextSpan(
+        locale: const Locale('fr'),
+        spellOut: true,
+        children: const [
+          TextSpan(
+            text: 'API',
+            semanticsIdentifier: 'authored-api',
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Text.rich(source).dashronyms(
+              registry: AcronymRegistry({
+                'API': 'Application Programming Interface',
+              }),
+              config: const DashronymConfig(enableBareAcronyms: true),
+            ),
+          ),
+        ),
+      );
+
+      final inline = tester.widget<AcronymInline>(
+        find.byType(AcronymInline),
+      );
+      expect(inline.locale, const Locale('fr'));
+      expect(inline.spellOut, isTrue);
+      expect(inline.semanticsIdentifier, 'authored-api');
+      expect(find.bySemanticsIdentifier('authored-api'), findsOneWidget);
+
+      final node = tester.getSemantics(
+        find.bySemanticsIdentifier('authored-api'),
+      );
+      expect(node.attributedLabel.string, 'API');
+      expect(
+        node.attributedLabel.attributes.whereType<SpellOutStringAttribute>(),
+        hasLength(1),
+      );
+      expect(
+        node.attributedLabel.attributes.whereType<LocaleStringAttribute>(),
+        hasLength(1),
+      );
+
+      semantics.dispose();
+    },
+  );
 
   testWidgets('Text.dashronyms merges inherited style and bold text', (
     tester,

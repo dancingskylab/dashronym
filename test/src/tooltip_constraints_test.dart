@@ -83,5 +83,60 @@ void main() {
       expect(resolved.maxWidth, 0);
       expect(resolved.minWidth, 0);
     });
+
+    test('falls back to overlay bounds when MediaQuery size is unknown', () {
+      const constraints = BoxConstraints(maxWidth: 640, maxHeight: 480);
+
+      final resolved = TooltipConstraintsResolver.resolve(
+        constraints: constraints,
+        mediaQuery: const MediaQueryData(),
+        theme: theme,
+      );
+
+      expect(resolved.maxWidth, 360);
+      expect(resolved.minWidth, theme.tooltipMinWidth);
+      expect(resolved.maxHeight, 464);
+    });
+
+    test('caps height above safe areas and the on-screen keyboard', () {
+      const constraints = BoxConstraints(
+        maxWidth: 400,
+        maxHeight: 600,
+      );
+      const mediaQuery = MediaQueryData(
+        size: Size(400, 600),
+        padding: EdgeInsets.only(top: 24, bottom: 16),
+        viewInsets: EdgeInsets.only(bottom: 220),
+      );
+
+      final resolved = TooltipConstraintsResolver.resolve(
+        constraints: constraints,
+        mediaQuery: mediaQuery,
+        theme: theme,
+      );
+
+      expect(resolved.maxHeight, 324);
+      expect(resolved.minHeight, 0);
+    });
+
+    test('collapses max height when the keyboard consumes the viewport', () {
+      const constraints = BoxConstraints(
+        maxWidth: 300,
+        maxHeight: 200,
+      );
+      const mediaQuery = MediaQueryData(
+        size: Size(300, 200),
+        padding: EdgeInsets.symmetric(vertical: 20),
+        viewInsets: EdgeInsets.only(bottom: 300),
+      );
+
+      final resolved = TooltipConstraintsResolver.resolve(
+        constraints: constraints,
+        mediaQuery: mediaQuery,
+        theme: theme,
+      );
+
+      expect(resolved.maxHeight, 0);
+    });
   });
 }

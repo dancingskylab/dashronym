@@ -1,3 +1,5 @@
+import 'dart:ui' show lerpDouble;
+
 import 'package:flutter/material.dart';
 
 /// Visual customization for inline acronym triggers and their tooltip cards.
@@ -18,7 +20,7 @@ import 'package:flutter/material.dart';
 ///   tooltipOffset: Offset(0, 8),
 /// );
 /// ```
-class DashronymTheme {
+class DashronymTheme extends ThemeExtension<DashronymTheme> {
   static const Object _sentinel = Object();
 
   /// Creates a theme describing trigger styling and tooltip card presentation.
@@ -167,11 +169,20 @@ class DashronymTheme {
   final double? tooltipMaxWidth;
 
   /// Creates a copy with the provided fields replaced.
+  ///
+  /// Use a `clear…` flag to remove its corresponding nullable value. Supplying
+  /// both a replacement and its clear flag throws [ArgumentError].
+  ///
+  /// For compatibility with earlier releases, passing `null` explicitly to
+  /// [hoverHideDelay] clears that value; omitting it retains the current value.
+  @override
   DashronymTheme copyWith({
     bool? underline,
     TextDecorationStyle? decorationStyle,
     double? decorationThickness,
+    bool clearDecorationThickness = false,
     TextStyle? acronymStyle,
+    bool clearAcronymStyle = false,
     double? cardWidth,
     double? cardElevation,
     EdgeInsets? cardPadding,
@@ -183,8 +194,11 @@ class DashronymTheme {
     IconData? cardIcon,
     IconData? cardCloseIcon,
     Color? cardIconColor,
+    bool clearCardIconColor = false,
     TextStyle? cardTitleStyle,
+    bool clearCardTitleStyle = false,
     TextStyle? cardSubtitleStyle,
+    bool clearCardSubtitleStyle = false,
     EdgeInsets? cardContentPadding,
     double? cardMinLeadingWidth,
     Offset? tooltipOffset,
@@ -195,13 +209,62 @@ class DashronymTheme {
     double? tooltipScaleBegin,
     double? tooltipScaleEnd,
     double? tooltipMinWidth,
+    bool clearTooltipMinWidth = false,
     double? tooltipMaxWidth,
+    bool clearTooltipMaxWidth = false,
   }) {
+    _rejectReplacementAndClear(
+      decorationThickness,
+      clearDecorationThickness,
+      'decorationThickness',
+      'clearDecorationThickness',
+    );
+    _rejectReplacementAndClear(
+      acronymStyle,
+      clearAcronymStyle,
+      'acronymStyle',
+      'clearAcronymStyle',
+    );
+    _rejectReplacementAndClear(
+      cardIconColor,
+      clearCardIconColor,
+      'cardIconColor',
+      'clearCardIconColor',
+    );
+    _rejectReplacementAndClear(
+      cardTitleStyle,
+      clearCardTitleStyle,
+      'cardTitleStyle',
+      'clearCardTitleStyle',
+    );
+    _rejectReplacementAndClear(
+      cardSubtitleStyle,
+      clearCardSubtitleStyle,
+      'cardSubtitleStyle',
+      'clearCardSubtitleStyle',
+    );
+    _rejectReplacementAndClear(
+      tooltipMinWidth,
+      clearTooltipMinWidth,
+      'tooltipMinWidth',
+      'clearTooltipMinWidth',
+    );
+    _rejectReplacementAndClear(
+      tooltipMaxWidth,
+      clearTooltipMaxWidth,
+      'tooltipMaxWidth',
+      'clearTooltipMaxWidth',
+    );
+
     return DashronymTheme(
       underline: underline ?? this.underline,
       decorationStyle: decorationStyle ?? this.decorationStyle,
-      decorationThickness: decorationThickness ?? this.decorationThickness,
-      acronymStyle: acronymStyle ?? this.acronymStyle,
+      decorationThickness: clearDecorationThickness
+          ? null
+          : decorationThickness ?? this.decorationThickness,
+      acronymStyle: clearAcronymStyle
+          ? null
+          : acronymStyle ?? this.acronymStyle,
       cardWidth: cardWidth ?? this.cardWidth,
       cardElevation: cardElevation ?? this.cardElevation,
       cardPadding: cardPadding ?? this.cardPadding,
@@ -214,9 +277,15 @@ class DashronymTheme {
       cardBorderRadius: cardBorderRadius ?? this.cardBorderRadius,
       cardIcon: cardIcon ?? this.cardIcon,
       cardCloseIcon: cardCloseIcon ?? this.cardCloseIcon,
-      cardIconColor: cardIconColor ?? this.cardIconColor,
-      cardTitleStyle: cardTitleStyle ?? this.cardTitleStyle,
-      cardSubtitleStyle: cardSubtitleStyle ?? this.cardSubtitleStyle,
+      cardIconColor: clearCardIconColor
+          ? null
+          : cardIconColor ?? this.cardIconColor,
+      cardTitleStyle: clearCardTitleStyle
+          ? null
+          : cardTitleStyle ?? this.cardTitleStyle,
+      cardSubtitleStyle: clearCardSubtitleStyle
+          ? null
+          : cardSubtitleStyle ?? this.cardSubtitleStyle,
       cardContentPadding: cardContentPadding ?? this.cardContentPadding,
       cardMinLeadingWidth: cardMinLeadingWidth ?? this.cardMinLeadingWidth,
       tooltipOffset: tooltipOffset ?? this.tooltipOffset,
@@ -226,32 +295,37 @@ class DashronymTheme {
       tooltipScaleOutCurve: tooltipScaleOutCurve ?? this.tooltipScaleOutCurve,
       tooltipScaleBegin: tooltipScaleBegin ?? this.tooltipScaleBegin,
       tooltipScaleEnd: tooltipScaleEnd ?? this.tooltipScaleEnd,
-      tooltipMinWidth: tooltipMinWidth ?? this.tooltipMinWidth,
-      tooltipMaxWidth: tooltipMaxWidth ?? this.tooltipMaxWidth,
+      tooltipMinWidth: clearTooltipMinWidth
+          ? null
+          : tooltipMinWidth ?? this.tooltipMinWidth,
+      tooltipMaxWidth: clearTooltipMaxWidth
+          ? null
+          : tooltipMaxWidth ?? this.tooltipMaxWidth,
     );
   }
 
-  /// Returns a theme that falls back to [this] when [other] omits values.
+  /// Returns a theme that falls back to the current values when [other] omits
+  /// nullable values.
   DashronymTheme merge(DashronymTheme? other) {
     if (other == null) return this;
     return copyWith(
       underline: other.underline,
       decorationStyle: other.decorationStyle,
-      decorationThickness: other.decorationThickness,
-      acronymStyle: other.acronymStyle,
+      decorationThickness: other.decorationThickness ?? decorationThickness,
+      acronymStyle: other.acronymStyle ?? acronymStyle,
       cardWidth: other.cardWidth,
       cardElevation: other.cardElevation,
       cardPadding: other.cardPadding,
       hoverShowDelay: other.hoverShowDelay,
-      hoverHideDelay: other.hoverHideDelay,
+      hoverHideDelay: other.hoverHideDelay ?? hoverHideDelay,
       tooltipFadeDuration: other.tooltipFadeDuration,
       enableHover: other.enableHover,
       cardBorderRadius: other.cardBorderRadius,
       cardIcon: other.cardIcon,
       cardCloseIcon: other.cardCloseIcon,
-      cardIconColor: other.cardIconColor,
-      cardTitleStyle: other.cardTitleStyle,
-      cardSubtitleStyle: other.cardSubtitleStyle,
+      cardIconColor: other.cardIconColor ?? cardIconColor,
+      cardTitleStyle: other.cardTitleStyle ?? cardTitleStyle,
+      cardSubtitleStyle: other.cardSubtitleStyle ?? cardSubtitleStyle,
       cardContentPadding: other.cardContentPadding,
       cardMinLeadingWidth: other.cardMinLeadingWidth,
       tooltipOffset: other.tooltipOffset,
@@ -261,8 +335,159 @@ class DashronymTheme {
       tooltipScaleOutCurve: other.tooltipScaleOutCurve,
       tooltipScaleBegin: other.tooltipScaleBegin,
       tooltipScaleEnd: other.tooltipScaleEnd,
-      tooltipMinWidth: other.tooltipMinWidth,
-      tooltipMaxWidth: other.tooltipMaxWidth,
+      tooltipMinWidth: other.tooltipMinWidth ?? tooltipMinWidth,
+      tooltipMaxWidth: other.tooltipMaxWidth ?? tooltipMaxWidth,
     );
+  }
+
+  /// Interpolates between this theme and [other].
+  ///
+  /// This makes `DashronymTheme` suitable for
+  /// `ThemeData.extensions` and animated app-theme transitions.
+  @override
+  DashronymTheme lerp(covariant DashronymTheme? other, double t) {
+    if (other == null) return this;
+
+    return DashronymTheme(
+      underline: _select(underline, other.underline, t),
+      decorationStyle: _select(
+        decorationStyle,
+        other.decorationStyle,
+        t,
+      ),
+      decorationThickness: _lerpNullableDouble(
+        decorationThickness,
+        other.decorationThickness,
+        t,
+      ),
+      acronymStyle: TextStyle.lerp(acronymStyle, other.acronymStyle, t),
+      cardWidth: lerpDouble(cardWidth, other.cardWidth, t)!,
+      cardElevation: lerpDouble(cardElevation, other.cardElevation, t)!,
+      cardPadding: EdgeInsets.lerp(cardPadding, other.cardPadding, t)!,
+      hoverShowDelay: _lerpDuration(
+        hoverShowDelay,
+        other.hoverShowDelay,
+        t,
+      ),
+      hoverHideDelay: _lerpNullableDuration(
+        hoverHideDelay,
+        other.hoverHideDelay,
+        t,
+      ),
+      tooltipFadeDuration: _lerpDuration(
+        tooltipFadeDuration,
+        other.tooltipFadeDuration,
+        t,
+      ),
+      enableHover: _select(enableHover, other.enableHover, t),
+      cardBorderRadius: lerpDouble(
+        cardBorderRadius,
+        other.cardBorderRadius,
+        t,
+      )!,
+      cardIcon: _select(cardIcon, other.cardIcon, t),
+      cardCloseIcon: _select(cardCloseIcon, other.cardCloseIcon, t),
+      cardIconColor: Color.lerp(cardIconColor, other.cardIconColor, t),
+      cardTitleStyle: TextStyle.lerp(
+        cardTitleStyle,
+        other.cardTitleStyle,
+        t,
+      ),
+      cardSubtitleStyle: TextStyle.lerp(
+        cardSubtitleStyle,
+        other.cardSubtitleStyle,
+        t,
+      ),
+      cardContentPadding: EdgeInsets.lerp(
+        cardContentPadding,
+        other.cardContentPadding,
+        t,
+      )!,
+      cardMinLeadingWidth: lerpDouble(
+        cardMinLeadingWidth,
+        other.cardMinLeadingWidth,
+        t,
+      )!,
+      tooltipOffset: Offset.lerp(tooltipOffset, other.tooltipOffset, t)!,
+      tooltipFadeInCurve: _select(
+        tooltipFadeInCurve,
+        other.tooltipFadeInCurve,
+        t,
+      ),
+      tooltipFadeOutCurve: _select(
+        tooltipFadeOutCurve,
+        other.tooltipFadeOutCurve,
+        t,
+      ),
+      tooltipScaleInCurve: _select(
+        tooltipScaleInCurve,
+        other.tooltipScaleInCurve,
+        t,
+      ),
+      tooltipScaleOutCurve: _select(
+        tooltipScaleOutCurve,
+        other.tooltipScaleOutCurve,
+        t,
+      ),
+      tooltipScaleBegin: lerpDouble(
+        tooltipScaleBegin,
+        other.tooltipScaleBegin,
+        t,
+      )!,
+      tooltipScaleEnd: lerpDouble(
+        tooltipScaleEnd,
+        other.tooltipScaleEnd,
+        t,
+      )!,
+      tooltipMinWidth: _lerpNullableDouble(
+        tooltipMinWidth,
+        other.tooltipMinWidth,
+        t,
+      ),
+      tooltipMaxWidth: _lerpNullableDouble(
+        tooltipMaxWidth,
+        other.tooltipMaxWidth,
+        t,
+      ),
+    );
+  }
+
+  static T _select<T>(T begin, T end, double t) => t < 0.5 ? begin : end;
+
+  static double? _lerpNullableDouble(double? begin, double? end, double t) {
+    if (begin == null || end == null) return _select(begin, end, t);
+    return lerpDouble(begin, end, t);
+  }
+
+  static Duration _lerpDuration(Duration begin, Duration end, double t) {
+    return Duration(
+      microseconds: lerpDouble(
+        begin.inMicroseconds,
+        end.inMicroseconds,
+        t,
+      )!.round(),
+    );
+  }
+
+  static Duration? _lerpNullableDuration(
+    Duration? begin,
+    Duration? end,
+    double t,
+  ) {
+    if (begin == null || end == null) return _select(begin, end, t);
+    return _lerpDuration(begin, end, t);
+  }
+
+  static void _rejectReplacementAndClear(
+    Object? replacement,
+    bool clear,
+    String replacementName,
+    String clearName,
+  ) {
+    if (replacement != null && clear) {
+      throw ArgumentError(
+        '$replacementName and $clearName cannot both be supplied',
+      );
+    }
   }
 }

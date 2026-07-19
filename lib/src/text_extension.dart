@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'config.dart';
 import 'dashronym_text.dart';
+import 'dashronym_scope.dart';
 import 'registry.dart';
 import 'dashronym_theme.dart';
 import 'acronym_inline.dart';
@@ -13,10 +14,18 @@ import 'acronym_inline.dart';
 /// you can also use [DashronymText] directly.
 extension DashronymsTextX on Text {
   /// Returns a [DashronymText] that decorates matches with glossary tooltips.
+  ///
+  /// Plain text and nested `Text.rich` span trees are both processed. Existing
+  /// [WidgetSpan]s are preserved, and a [TextSpan] with an explicit
+  /// [TextSpan.semanticsLabel] is left unchanged as an author-controlled
+  /// semantics boundary.
+  ///
+  /// [registry], [config], [theme], and [tooltipBuilder] may be inherited from
+  /// [DashronymScope]. Explicit values take precedence.
   Widget dashronyms({
-    required AcronymRegistry registry,
-    DashronymConfig config = const DashronymConfig(),
-    DashronymTheme theme = const DashronymTheme(),
+    AcronymRegistry? registry,
+    DashronymConfig? config,
+    DashronymTheme? theme,
     DashronymTooltipBuilder? tooltipBuilder,
     TextStyle? style,
     StrutStyle? strutStyle,
@@ -27,16 +36,20 @@ extension DashronymsTextX on Text {
     TextOverflow? overflow,
     int? maxLines,
     String? semanticsLabel,
+    String? semanticsIdentifier,
     TextWidthBasis? textWidthBasis,
     TextHeightBehavior? textHeightBehavior,
     TextScaler? textScaler,
     Color? selectionColor,
   }) {
     if (data == null) {
-      // When constructed with Text.rich, fall back to the original widget.
-      return Text.rich(
+      return DashronymText.rich(
         textSpan!,
         key: key,
+        registry: registry,
+        config: config,
+        theme: theme,
+        tooltipBuilder: tooltipBuilder,
         style: style ?? this.style,
         strutStyle: strutStyle ?? this.strutStyle,
         textAlign: textAlign ?? this.textAlign,
@@ -47,7 +60,7 @@ extension DashronymsTextX on Text {
         textScaler: textScaler ?? this.textScaler,
         maxLines: maxLines ?? this.maxLines,
         semanticsLabel: semanticsLabel ?? this.semanticsLabel,
-        semanticsIdentifier: semanticsIdentifier,
+        semanticsIdentifier: semanticsIdentifier ?? this.semanticsIdentifier,
         textWidthBasis: textWidthBasis ?? this.textWidthBasis,
         textHeightBehavior: textHeightBehavior ?? this.textHeightBehavior,
         selectionColor: selectionColor ?? this.selectionColor,
@@ -71,6 +84,7 @@ extension DashronymsTextX on Text {
       textScaler: textScaler ?? this.textScaler,
       maxLines: maxLines ?? this.maxLines,
       semanticsLabel: semanticsLabel ?? this.semanticsLabel,
+      semanticsIdentifier: semanticsIdentifier ?? this.semanticsIdentifier,
       textWidthBasis: textWidthBasis ?? this.textWidthBasis,
       textHeightBehavior: textHeightBehavior ?? this.textHeightBehavior,
       selectionColor: selectionColor ?? this.selectionColor,

@@ -103,6 +103,51 @@ void main() {
     expect(copy.cardWidth, 400);
   });
 
+  test('DashronymTheme.copyWith can explicitly clear nullable values', () {
+    const base = DashronymTheme(
+      decorationThickness: 2,
+      acronymStyle: TextStyle(fontWeight: FontWeight.bold),
+      hoverHideDelay: Duration(milliseconds: 120),
+      cardIconColor: Colors.blue,
+      cardTitleStyle: TextStyle(fontWeight: FontWeight.bold),
+      cardSubtitleStyle: TextStyle(fontStyle: FontStyle.italic),
+      tooltipMinWidth: 100,
+      tooltipMaxWidth: 300,
+    );
+
+    final copy = base.copyWith(
+      clearDecorationThickness: true,
+      clearAcronymStyle: true,
+      hoverHideDelay: null,
+      clearCardIconColor: true,
+      clearCardTitleStyle: true,
+      clearCardSubtitleStyle: true,
+      clearTooltipMinWidth: true,
+      clearTooltipMaxWidth: true,
+    );
+
+    expect(copy.decorationThickness, isNull);
+    expect(copy.acronymStyle, isNull);
+    expect(copy.hoverHideDelay, isNull);
+    expect(copy.cardIconColor, isNull);
+    expect(copy.cardTitleStyle, isNull);
+    expect(copy.cardSubtitleStyle, isNull);
+    expect(copy.tooltipMinWidth, isNull);
+    expect(copy.tooltipMaxWidth, isNull);
+  });
+
+  test('DashronymTheme.copyWith rejects replacement and clear conflicts', () {
+    const base = DashronymTheme();
+
+    expect(
+      () => base.copyWith(
+        tooltipMaxWidth: 320,
+        clearTooltipMaxWidth: true,
+      ),
+      throwsArgumentError,
+    );
+  });
+
   test('DashronymTheme.merge prefers other values when provided', () {
     const base = DashronymTheme(cardWidth: 320);
     const other = DashronymTheme(
@@ -116,5 +161,48 @@ void main() {
     expect(merged.cardWidth, 280);
     expect(merged.tooltipScaleBegin, 0.85);
     expect(merged.tooltipScaleEnd, 1.0);
+  });
+
+  test('DashronymTheme can be installed as a ThemeExtension', () {
+    const dashronymTheme = DashronymTheme(cardWidth: 280);
+    final materialTheme = ThemeData(extensions: const [dashronymTheme]);
+
+    expect(
+      materialTheme.extension<DashronymTheme>(),
+      same(dashronymTheme),
+    );
+  });
+
+  test('DashronymTheme.lerp interpolates animatable values', () {
+    const begin = DashronymTheme(
+      cardWidth: 200,
+      cardElevation: 2,
+      tooltipFadeDuration: Duration(milliseconds: 100),
+      tooltipOffset: Offset.zero,
+      tooltipScaleBegin: 0.8,
+      tooltipScaleEnd: 1,
+    );
+    const end = DashronymTheme(
+      underline: false,
+      cardWidth: 300,
+      cardElevation: 6,
+      tooltipFadeDuration: Duration(milliseconds: 300),
+      tooltipOffset: Offset(10, 20),
+      tooltipScaleBegin: 1,
+      tooltipScaleEnd: 1.2,
+    );
+
+    final midpoint = begin.lerp(end, 0.5);
+
+    expect(midpoint.underline, isFalse);
+    expect(midpoint.cardWidth, 250);
+    expect(midpoint.cardElevation, 4);
+    expect(
+      midpoint.tooltipFadeDuration,
+      const Duration(milliseconds: 200),
+    );
+    expect(midpoint.tooltipOffset, const Offset(5, 10));
+    expect(midpoint.tooltipScaleBegin, 0.9);
+    expect(midpoint.tooltipScaleEnd, 1.1);
   });
 }

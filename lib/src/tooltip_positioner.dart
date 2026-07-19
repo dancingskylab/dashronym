@@ -80,8 +80,14 @@ class AcronymTooltipPositioner {
         horizontalMargin -
         tooltipSize.width;
 
+    final effectiveKeyboardInset = keyboardInset
+        .clamp(0.0, math.max(0.0, overlaySize.height - padding.top))
+        .toDouble();
     final availableHeight =
-        overlaySize.height - padding.top - padding.bottom - keyboardInset;
+        overlaySize.height -
+        padding.top -
+        padding.bottom -
+        effectiveKeyboardInset;
     final desiredVerticalMargin = math.max(0.0, viewportMargin);
     final maxVerticalMargin = math.max(
       0.0,
@@ -89,9 +95,16 @@ class AcronymTooltipPositioner {
     );
     final verticalMargin = math.min(desiredVerticalMargin, maxVerticalMargin);
 
-    final safeTop = padding.top + verticalMargin;
-    final safeBottomLimit =
-        overlaySize.height - padding.bottom - keyboardInset - verticalMargin;
+    final safeTop = math.min(
+      overlaySize.height,
+      padding.top + verticalMargin,
+    );
+    final rawSafeBottom =
+        overlaySize.height -
+        padding.bottom -
+        effectiveKeyboardInset -
+        verticalMargin;
+    final safeBottomLimit = math.max(safeTop, rawSafeBottom);
 
     const edgeNudge = 8.0;
     final desiredLeft = direction == TextDirection.ltr
@@ -122,7 +135,9 @@ class AcronymTooltipPositioner {
         anchorTopLeft.dy - tooltipSize.height - theme.tooltipOffset.dy;
     final fitsAbove = desiredAbove >= safeTop;
 
-    if (!fitsBelow && fitsAbove) {
+    if (safeBottomLimit <= safeTop) {
+      top = safeTop;
+    } else if (!fitsBelow && fitsAbove) {
       top = desiredAbove;
     } else {
       top = math.min(desiredBelow, safeBottomLimit - tooltipSize.height);

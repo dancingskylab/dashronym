@@ -70,53 +70,71 @@ class DashronymTooltipCard extends StatelessWidget {
     final subtitleStyle =
         theme.cardSubtitleStyle ?? Theme.of(context).textTheme.bodyMedium;
 
-    return Semantics(
-      container: true,
-      liveRegion: true,
-      label: strings.tooltipLabel(acronym),
-      value: description,
-      child: Material(
-        elevation: theme.cardElevation,
-        borderRadius: BorderRadius.circular(theme.cardBorderRadius),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final mqForBuilder = MediaQuery.maybeOf(context);
-            final tooltipConstraints = TooltipConstraintsResolver.resolve(
-              constraints: constraints,
-              mediaQuery: mqForBuilder ?? mq,
-              theme: theme,
-            );
-            return ConstrainedBox(
-              constraints: tooltipConstraints,
-              child: Padding(
-                padding: theme.cardPadding,
-                child: ListTile(
-                  leading: Icon(theme.cardIcon, color: iconColor),
-                  title: Text(
-                    acronym,
-                    style: titleStyle,
-                    maxLines: 1,
-                    softWrap: false,
-                    overflow: TextOverflow.ellipsis,
-                    textWidthBasis: TextWidthBasis.longestLine,
-                  ),
-                  subtitle: Text(
-                    description,
-                    style: subtitleStyle,
-                    softWrap: true,
-                  ),
-                  trailing: IconButton(
-                    tooltip: strings.closeButtonTooltip(acronym),
-                    icon: Icon(theme.cardCloseIcon, color: iconColor),
-                    onPressed: onClose,
-                  ),
-                  contentPadding: theme.cardContentPadding,
-                ),
-              ),
-            );
-          },
+    final card = Material(
+      elevation: theme.cardElevation,
+      borderRadius: BorderRadius.circular(theme.cardBorderRadius),
+      clipBehavior: Clip.antiAlias,
+      child: SingleChildScrollView(
+        primary: false,
+        child: Padding(
+          padding: theme.cardPadding,
+          child: ListTile(
+            leading: Icon(theme.cardIcon, color: iconColor),
+            minLeadingWidth: theme.cardMinLeadingWidth,
+            title: Text(
+              acronym,
+              style: titleStyle,
+              maxLines: 1,
+              softWrap: false,
+              overflow: TextOverflow.ellipsis,
+              textWidthBasis: TextWidthBasis.longestLine,
+            ),
+            subtitle: Text(
+              description,
+              style: subtitleStyle,
+              softWrap: true,
+            ),
+            trailing: IconButton(
+              tooltip: strings.closeButtonTooltip(acronym),
+              icon: Icon(theme.cardCloseIcon, color: iconColor),
+              onPressed: onClose,
+            ),
+            contentPadding: theme.cardContentPadding,
+          ),
         ),
       ),
+    );
+
+    Widget result = card;
+    if (TooltipConstraintScope.maybeOf(context) == null) {
+      result = LayoutBuilder(
+        builder: (context, constraints) {
+          final mqForBuilder = MediaQuery.maybeOf(context);
+          final tooltipConstraints = TooltipConstraintsResolver.resolve(
+            constraints: constraints,
+            mediaQuery: mqForBuilder ?? mq,
+            theme: theme,
+          );
+          return TooltipConstraintScope(
+            constraints: tooltipConstraints,
+            child: ConstrainedBox(
+              constraints: tooltipConstraints,
+              child: card,
+            ),
+          );
+        },
+      );
+    }
+
+    return Semantics(
+      container: true,
+      // Platforms that support explicit announcements use the single
+      // announcement emitted by AcronymInline. Other platforms can discover
+      // the newly inserted semantic live region without a disruptive event.
+      liveRegion: !MediaQuery.supportsAnnounceOf(context),
+      label: strings.tooltipLabel(acronym),
+      value: description,
+      child: result,
     );
   }
 }

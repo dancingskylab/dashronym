@@ -63,14 +63,27 @@ class DashronymParser {
   /// * Delegates tokenization to [DashronymParserCore].
   /// * Renders [TextToken]s as [TextSpan]s.
   /// * Renders [AcronymToken]s as [WidgetSpan]s that host [AcronymInline].
-  List<InlineSpan> parseToSpans(String input) {
+  List<InlineSpan> parseToSpans(
+    String input, {
+    Locale? locale,
+    bool? spellOut,
+    String? semanticsIdentifier,
+  }) {
     final tokens = _core.parse(input);
     final spans = <InlineSpan>[];
+    var remainingSemanticsIdentifier = semanticsIdentifier;
 
     for (final token in tokens) {
+      final tokenSemanticsIdentifier = remainingSemanticsIdentifier;
+      remainingSemanticsIdentifier = null;
       spans.add(
         switch (token) {
-          TextToken(:final text) => TextSpan(text: text),
+          TextToken(:final text) => TextSpan(
+            text: text,
+            locale: locale,
+            spellOut: spellOut,
+            semanticsIdentifier: tokenSemanticsIdentifier,
+          ),
           AcronymToken(:final acronym, :final description) => WidgetSpan(
             alignment: PlaceholderAlignment.baseline,
             baseline: TextBaseline.alphabetic,
@@ -80,6 +93,13 @@ class DashronymParser {
               theme: theme,
               textStyle: baseStyle,
               tooltipBuilder: tooltipBuilder,
+              // RichText scales WidgetSpan children at the render-object
+              // boundary. Scaling this Text again would square the factor.
+              textScaler: TextScaler.noScaling,
+              entry: registry.entryOf(acronym),
+              locale: locale,
+              spellOut: spellOut,
+              semanticsIdentifier: tokenSemanticsIdentifier,
             ),
           ),
         },

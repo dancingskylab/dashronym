@@ -19,6 +19,10 @@ void main() {
       'Double tap to hide definition for SDK.',
     );
     expect(strings.announceTooltipShown('SDK'), 'Showing definition for SDK.');
+    expect(
+      strings.announceTooltipContent('SDK', 'Software Development Kit'),
+      'Showing definition for SDK. Software Development Kit',
+    );
     expect(strings.closeButtonTooltip('SDK'), 'Hide definition for SDK');
     expect(strings.semanticsBarrierLabel('SDK'), 'Hide definition for SDK.');
     expect(strings.closeButtonLabel('SDK'), 'Close definition for SDK');
@@ -30,4 +34,20 @@ void main() {
     expect(delegate.isSupported(const Locale('en')), isTrue);
     expect(delegate.shouldReload(delegate), isFalse);
   });
+
+  test('complete announcements preserve custom shown-message overrides', () {
+    final strings = _CustomDashronymLocalizations(const Locale('en'));
+
+    expect(
+      strings.announceTooltipContent('SDK', 'Software Development Kit'),
+      'Opening SDK. Software Development Kit',
+    );
+  });
+}
+
+final class _CustomDashronymLocalizations extends DashronymLocalizations {
+  _CustomDashronymLocalizations(super.locale);
+
+  @override
+  String announceTooltipShown(String acronym) => 'Opening $acronym.';
 }

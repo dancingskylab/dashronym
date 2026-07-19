@@ -293,5 +293,25 @@ void main() {
       final actualTop = anchorTopLeft.dy + offset.dy;
       expect(actualTop, 0);
     });
+
+    test('handles a keyboard inset larger than the remaining viewport', () {
+      const overlaySize = Size(300, 240);
+      const anchorTopLeft = Offset(40, 80);
+      const anchorSize = Size(80, 20);
+      const tooltipSize = Size(220, 0);
+
+      final offset = AcronymTooltipPositioner.resolveFollowerOffset(
+        overlaySize: overlaySize,
+        anchorTopLeft: anchorTopLeft,
+        anchorSize: anchorSize,
+        tooltipSize: tooltipSize,
+        theme: theme,
+        padding: const EdgeInsets.only(top: 24),
+        keyboardInset: 400,
+        direction: TextDirection.ltr,
+      );
+
+      expect(anchorTopLeft.dy + offset.dy, 24);
+    });
   });
 }
