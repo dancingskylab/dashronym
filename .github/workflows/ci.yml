@@ -1,0 +1,109 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  LATEST_FLUTTER_VERSION: "3.44.6"
+
+jobs:
+  validate:
+    name: Flutter ${{ matrix.flutter-version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        flutter-version:
+          - "3.38.1"
+          - "3.44.6"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ matrix.flutter-version }}
+          channel: stable
+          cache: true
+
+      - name: Report toolchain
+        run: flutter --version
+
+      - name: Resolve dependencies
+        run: flutter pub get
+
+      - name: Verify formatting
+        if: matrix.flutter-version == env.LATEST_FLUTTER_VERSION
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Run strict static analysis
+        run: flutter analyze --fatal-infos
+
+      - name: Run tests
+        run: flutter test
+
+      - name: Build API documentation without warnings
+        if: matrix.flutter-version == env.LATEST_FLUTTER_VERSION
+        shell: bash
+        run: |
+          set -o pipefail
+          dart doc --output .dart_tool/api-docs 2>&1 | tee /tmp/dartdoc.log
+          if grep -Eiq '(^|[[:space:]])(warning|error):' /tmp/dartdoc.log; then
+            echo "dartdoc emitted a warning or error."
+            exit 1
+          fi
+
+      - name: Validate package publication
+        if: matrix.flutter-version == env.LATEST_FLUTTER_VERSION
+        run: dart pub publish --dry-run
+
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up latest supported Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.LATEST_FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Resolve dependencies
+        run: flutter pub get
+
+      - name: Collect line and branch coverage
+        run: flutter test --coverage --branch-coverage
+
+      - name: Enforce coverage floors
+        run: >-
+          python3 .github/scripts/check_lcov.py coverage/lcov.info
+          --min-lines 95
+          --min-branches 85
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: lcov
+          path: coverage/lcov.info
+          if-no-files-found: error
+          retention-days: 14

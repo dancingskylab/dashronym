@@ -15,7 +15,8 @@ migrate_working_dir/
 *.ipr
 *.iws
 .idea/
-.vscode/
+.vscode/*
+!.vscode/settings.json
 
 # Tooling caches
 .config/
