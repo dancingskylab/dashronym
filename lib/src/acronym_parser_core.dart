@@ -1,5 +1,5 @@
-import 'config.dart';
 import 'acronym_tokens.dart';
+import 'config.dart';
 import 'lru_cache.dart';
 import 'registry.dart';
 
@@ -8,11 +8,17 @@ import 'registry.dart';
 /// This parser is responsible for locating acronyms based on [DashronymConfig]
 /// and [AcronymRegistry]. It does not know about Flutter, widgets, or spans.
 ///
-/// Results are memoized in an internal [Lru] cache keyed by the input text and
-/// configuration so repeated parsing of identical content avoids recomputation.
+/// Results are memoized in a parser-local [Lru] cache keyed by the input text,
+/// so repeated parsing of identical content avoids recomputation without
+/// sharing registry-resolved tokens between parser instances.
 class DashronymParserCore {
   /// Creates a core parser backed by [registry] and [config].
-  DashronymParserCore({required this.registry, required this.config});
+  DashronymParserCore({
+    required this.registry,
+    required this.config,
+    int cacheCapacity = 256,
+  }) : _cache = Lru<String, List<DashronymToken>>(capacity: cacheCapacity),
+       _markerRegexes = _createMarkerRegexes(config);
 
   /// Dictionary of acronyms and their descriptions used for matching.
   final AcronymRegistry registry;
@@ -21,12 +27,10 @@ class DashronymParserCore {
   /// support.
   final DashronymConfig config;
 
-  /// Shared LRU cache of previously parsed inputs.
-  ///
-  /// Keyed by the input text plus those [DashronymConfig] fields that influence
-  /// matching. The registry is treated as immutable.
-  static final Lru<String, List<DashronymToken>> _cache =
-      Lru<String, List<DashronymToken>>(capacity: 256);
+  final Lru<String, List<DashronymToken>> _cache;
+  final List<RegExp> _markerRegexes;
+
+  static final RegExp _bareAcronym = RegExp(r'\b([A-Z]{2,})\b');
 
   /// Converts [input] into a sequence of [DashronymToken]s.
   ///
@@ -35,34 +39,14 @@ class DashronymParserCore {
   ///   `[A-Z]{2,}` tokens within [DashronymConfig.minLen]…[DashronymConfig.maxLen].
   /// * Only acronyms present in [registry] are turned into [AcronymToken]s;
   ///   other segments are merged into [TextToken]s.
-  /// * Returns cached results when the cache key (input + [config]) matches a
-  ///   prior invocation.
+  /// * Returns cached results when this parser previously parsed [input].
   List<DashronymToken> parse(String input) {
-    final cacheKey = [
-      input,
-      config.enableBareAcronyms,
-      config.minLen,
-      config.maxLen,
-      config.acceptMarkers.join(),
-    ].join('__');
-
-    final cached = _cache.get(cacheKey);
+    final cached = _cache.get(input);
     if (cached != null) return cached;
 
     final tokens = <DashronymToken>[];
     var buffer = StringBuffer();
     var i = 0;
-
-    // Build regexes for each accepted marker pair, e.g. '(' and ')'.
-    final markerRegexes = config.acceptMarkers.map((pair) {
-      assert(pair.length == 2, 'Marker must be two chars like "()"');
-      final l = RegExp.escape(pair[0]);
-      final r = RegExp.escape(pair[1]);
-      return RegExp('$l([A-Za-z0-9]{${config.minLen},${config.maxLen}})$r');
-    }).toList();
-
-    // Bare ALL-CAPS word (>=2 chars); final length check happens below.
-    final bare = RegExp(r'\b([A-Z]{2,})\b');
 
     void flushBuffer() {
       final text = buffer.toString();
@@ -75,17 +59,15 @@ class DashronymParserCore {
       var matched = false;
 
       // Try marker-based matches first.
-      for (final rx in markerRegexes) {
+      for (final rx in _markerRegexes) {
         final m = rx.matchAsPrefix(input, i);
         if (m != null) {
           final ac = m.group(1)!;
-          if (registry.contains(ac)) {
+          final description = registry.descriptionOf(ac);
+          if (description != null) {
             flushBuffer();
             tokens.add(
-              AcronymToken(
-                acronym: ac,
-                description: registry.descriptionOf(ac)!,
-              ),
+              AcronymToken(acronym: ac, description: description),
             );
             i = m.end;
             matched = true;
@@ -97,18 +79,16 @@ class DashronymParserCore {
 
       // Optionally match bare ALL-CAPS tokens.
       if (config.enableBareAcronyms) {
-        final m = bare.matchAsPrefix(input, i);
+        final m = _bareAcronym.matchAsPrefix(input, i);
         if (m != null) {
           final ac = m.group(1)!;
+          final description = registry.descriptionOf(ac);
           if (ac.length >= config.minLen &&
               ac.length <= config.maxLen &&
-              registry.contains(ac)) {
+              description != null) {
             flushBuffer();
             tokens.add(
-              AcronymToken(
-                acronym: ac,
-                description: registry.descriptionOf(ac)!,
-              ),
+              AcronymToken(acronym: ac, description: description),
             );
             i = m.end;
             continue;
@@ -124,7 +104,24 @@ class DashronymParserCore {
     flushBuffer();
 
     final result = List<DashronymToken>.unmodifiable(tokens);
-    _cache.put(cacheKey, result);
+    _cache.put(input, result);
     return result;
+  }
+
+  static List<RegExp> _createMarkerRegexes(DashronymConfig config) {
+    config.validate();
+
+    return List<RegExp>.unmodifiable(
+      config.acceptMarkers.map((pair) {
+        final [left, right] = pair.runes
+            .map(String.fromCharCode)
+            .toList(growable: false);
+        return RegExp(
+          '${RegExp.escape(left)}'
+          '([A-Za-z0-9]{${config.minLen},${config.maxLen}})'
+          '${RegExp.escape(right)}',
+        );
+      }),
+    );
   }
 }

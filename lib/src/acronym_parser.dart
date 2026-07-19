@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-import 'config.dart';
 import 'acronym_inline.dart';
 import 'acronym_parser_core.dart';
 import 'acronym_tokens.dart';
-import 'registry.dart';
+import 'config.dart';
 import 'dashronym_theme.dart';
+import 'registry.dart';
 
 /// Maps [DashronymToken]s produced by [DashronymParserCore] into [InlineSpan]s
 /// with embedded acronym tooltip widgets.
@@ -68,23 +68,22 @@ class DashronymParser {
     final spans = <InlineSpan>[];
 
     for (final token in tokens) {
-      if (token is TextToken) {
-        spans.add(TextSpan(text: token.text));
-      } else if (token is AcronymToken) {
-        spans.add(
-          WidgetSpan(
+      spans.add(
+        switch (token) {
+          TextToken(:final text) => TextSpan(text: text),
+          AcronymToken(:final acronym, :final description) => WidgetSpan(
             alignment: PlaceholderAlignment.baseline,
             baseline: TextBaseline.alphabetic,
             child: AcronymInline(
-              acronym: token.acronym,
-              description: token.description,
+              acronym: acronym,
+              description: description,
               theme: theme,
               textStyle: baseStyle,
               tooltipBuilder: tooltipBuilder,
             ),
           ),
-        );
-      }
+        },
+      );
     }
 
     return List<InlineSpan>.unmodifiable(spans);

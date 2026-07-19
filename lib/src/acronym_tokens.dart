@@ -14,6 +14,15 @@ final class TextToken extends DashronymToken {
 
   /// The literal text for this run.
   final String text;
+
+  @override
+  bool operator ==(Object other) => other is TextToken && other.text == text;
+
+  @override
+  int get hashCode => text.hashCode;
+
+  @override
+  String toString() => 'TextToken($text)';
 }
 
 /// A matched acronym and its description.
@@ -26,4 +35,17 @@ final class AcronymToken extends DashronymToken {
 
   /// The description resolved from the registry.
   final String description;
+
+  @override
+  bool operator ==(Object other) =>
+      other is AcronymToken &&
+      other.acronym == acronym &&
+      other.description == description;
+
+  @override
+  int get hashCode => Object.hash(acronym, description);
+
+  @override
+  String toString() =>
+      'AcronymToken(acronym: $acronym, description: $description)';
 }
