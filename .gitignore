@@ -35,6 +35,6 @@ migrate_working_dir/
 /build/
 /coverage/
 /doc/
-/packagetester/'
+/packagetester/
 
 agents.md

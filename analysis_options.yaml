@@ -4,5 +4,11 @@ include: package:flutter_lints/flutter.yaml
 # https://dart.dev/guides/language/analysis-options
 
 analyzer:
-  # Analyze tests with the same lints as the package code.
-  # Add targeted ignores here if any golden harness files require it.
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+
+formatter:
+  page_width: 80
+  trailing_commas: preserve
