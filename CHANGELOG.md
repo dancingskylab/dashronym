@@ -1,3 +1,78 @@
+## 0.1.0 - 2026-07-19
+
+This release establishes the accessible Flutter interaction contract and the
+first portable glossary-data contract. See [MIGRATION.md](MIGRATION.md) for
+upgrade examples and behavior changes.
+
+### Added
+
+- Added immutable `AcronymEntry` and `DashronymGlossary` models with aliases,
+  tags, provenance fields, deeply immutable JSON metadata, deterministic
+  serialization, value equality, clear-safe `copyWith`, and direct
+  glossary-to-registry conversion.
+- Published the strict, versioned Dashronym glossary JSON Schema at
+  `schema/v1/dashronym-glossary.schema.json`.
+- Added the Flutter-import-free `dashronym_core.dart` entry point for domain
+  code running within Flutter-SDK projects.
+- Added rich registry construction, canonical and alias lookup,
+  `AcronymDuplicatePolicy`, and rich-entry access from custom tooltip details.
+- Added `DashronymScope` for shared registry, matching, theme, and tooltip
+  defaults.
+- Made `DashronymTheme` a Flutter `ThemeExtension` with animated interpolation
+  and explicit clearing of nullable settings.
+- Added recursive `DashronymText.rich` and `Text.rich(...).dashronyms()`
+  support while preserving authored span metadata and existing widget spans.
+- Added a minimum/latest Flutter CI matrix, coverage gates, warning-free
+  dartdoc and publication checks, plus contributing, security, migration,
+  release, roadmap, and product-strategy documentation.
+
+### Changed
+
+- Raised the supported SDK floor to Dart 3.10 and Flutter 3.38.1 so the package
+  constraints match the APIs used by the implementation.
+- Made `DashronymText` registry, configuration, theme, and tooltip builder
+  inheritable. Explicit arguments take precedence over `DashronymScope`, then
+  app theme and package defaults.
+- Rebuilt tooltip ownership around `OverlayPortal` so inherited context,
+  lifecycle, focus traversal, and root-overlay positioning stay consistent.
+- Defined keyboard, hover, outside-tap, Escape, scroll, resize, focus
+  restoration, and single-active-tooltip behavior.
+- Applied one capability-aware screen-reader announcement path that exposes the
+  complete definition, and kept the inserted tooltip available through
+  semantics.
+- Exposed expanded/collapsed state on each inline glossary control.
+- Unified stock and custom tooltip constraints, including safe areas, keyboard
+  insets, compact viewports, maximum height, and scrollable long content.
+- Preserved selection registration, directionality, locale, semantics
+  identifiers, rich styles, and effective text scaling through transformed
+  text.
+- Moved `flutter_localizations` to development dependencies because the
+  package library does not import it.
+- Updated package metadata and links to the canonical
+  `dancingskylab/dashronym` repository.
+
+### Fixed
+
+- Isolated parser caches so definitions can never leak between registries.
+- Bounded and corrected LRU promotion, eviction, nullable-value, and validation
+  behavior.
+- Enforced configuration invariants in release builds and defensively copied
+  runtime marker collections.
+- Supported marker pairs made from non-BMP Unicode scalar values.
+- Expanded explicit marker matching to registered punctuation and mixed-case
+  terms such as `(C++)`, `(.NET)`, `(R&D)`, and `(OAuth)`, while keeping bare
+  matching conservative.
+- Prevented rapid hide/reopen animation completions from removing a replacement
+  tooltip.
+- Kept hover-open tooltips visible while the pointer moves between the trigger
+  and surface.
+- Prevented WidgetSpan trigger text from receiving the effective scale twice
+  while retaining that scale for tooltip content and direct inline widgets.
+- Kept interactive acronym semantics reachable when callers provide an outer
+  `semanticsLabel`.
+- Corrected RTL/edge positioning, compact-height clamping, long-definition
+  scrolling, and stale overlay dismissal during viewport changes.
+
 ## 0.0.10
 
 - Updated inline tooltip semantics to use `SemanticsService.sendAnnouncement` with `View.of(context)` so screen reader announcements remain polite and compatible with multi-window Flutter apps.
