@@ -31,7 +31,7 @@ final class DashronymGlossary {
     locale: _optionalText(locale, 'locale'),
     license: _optionalText(license, 'license'),
     source: _optionalText(source, 'source'),
-    updatedAt: updatedAt?.toUtc(),
+    updatedAt: _normalizeUpdatedAt(updatedAt),
     metadata: freezeJsonMap(metadata, path: r'$.metadata'),
   );
 
@@ -273,18 +273,114 @@ final class DashronymGlossary {
   String toString() => 'DashronymGlossary($name, ${entries.length} entries)';
 }
 
+final RegExp _rfc3339DateTimePattern = RegExp(
+  r'^([0-9]{4})-([0-9]{2})-([0-9]{2})'
+  r'[Tt]([0-9]{2}):([0-9]{2}):([0-9]{2})'
+  r'(?:\.([0-9]+))?'
+  r'([Zz]|([+-])([0-9]{2}):([0-9]{2}))$',
+);
+
 DateTime _parseUpdatedAt(String value) {
-  if (!RegExp(r'(?:[zZ]|[+-]\d{2}:\d{2})$').hasMatch(value)) {
+  final match = _rfc3339DateTimePattern.firstMatch(value);
+  if (match == null || match.end != value.length) {
     throw FormatException(
-      r'$.updatedAt must include a UTC or numeric timezone offset',
+      r'$.updatedAt must use strict RFC 3339 date-time syntax '
+      'with an explicit timezone',
     );
   }
-  final parsed = DateTime.tryParse(value);
-  if (parsed == null) {
-    throw FormatException(r'$.updatedAt must be an ISO 8601 date-time');
+
+  final year = int.parse(match.group(1)!);
+  final month = int.parse(match.group(2)!);
+  final day = int.parse(match.group(3)!);
+  final hour = int.parse(match.group(4)!);
+  final minute = int.parse(match.group(5)!);
+  final second = int.parse(match.group(6)!);
+
+  if (month < 1 ||
+      month > 12 ||
+      day < 1 ||
+      day > _daysInMonth(year, month) ||
+      hour > 23 ||
+      minute > 59 ||
+      second > 60) {
+    throw FormatException(
+      r'$.updatedAt has an invalid RFC 3339 date or time component',
+    );
   }
-  return parsed.toUtc();
+
+  var offsetMinutes = 0;
+  if (match.group(8)!.toUpperCase() != 'Z') {
+    final offsetHour = int.parse(match.group(10)!);
+    final offsetMinute = int.parse(match.group(11)!);
+    if (offsetHour > 23 || offsetMinute > 59) {
+      throw FormatException(
+        r'$.updatedAt has an invalid RFC 3339 timezone offset',
+      );
+    }
+    offsetMinutes = offsetHour * 60 + offsetMinute;
+    if (match.group(9) == '-') {
+      offsetMinutes = -offsetMinutes;
+    }
+  }
+
+  final fraction = (match.group(7) ?? '').padRight(6, '0');
+  final microseconds = int.parse(fraction.substring(0, 6));
+  var parsed = DateTime.utc(
+    year,
+    month,
+    day,
+    hour,
+    minute,
+    second == 60 ? 59 : second,
+    microseconds ~/ Duration.microsecondsPerMillisecond,
+    microseconds % Duration.microsecondsPerMillisecond,
+  ).subtract(Duration(minutes: offsetMinutes));
+  if (second == 60) {
+    if (!_isPossibleLeapSecond(parsed)) {
+      throw FormatException(
+        r'$.updatedAt places an RFC 3339 leap second outside the end of '
+        'June or December',
+      );
+    }
+    parsed = parsed.add(const Duration(seconds: 1));
+  }
+
+  return parsed;
 }
+
+DateTime? _normalizeUpdatedAt(DateTime? value) {
+  if (value == null) {
+    return null;
+  }
+
+  final utc = value.toUtc();
+  if (utc.year < 0 || utc.year > 9999) {
+    throw ArgumentError.value(
+      value,
+      'updatedAt',
+      'its UTC representation must have a four-digit year from 0000 '
+          'through 9999',
+    );
+  }
+  return utc;
+}
+
+int _daysInMonth(int year, int month) => switch (month) {
+  2 when _isLeapYear(year) => 29,
+  2 => 28,
+  4 || 6 || 9 || 11 => 30,
+  _ => 31,
+};
+
+bool _isLeapYear(int year) =>
+    year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
+
+bool _isPossibleLeapSecond(DateTime utc) =>
+    utc.hour == 23 &&
+    utc.minute == 59 &&
+    utc.second == 59 &&
+    ((utc.month == DateTime.june && utc.day == 30) ||
+        (utc.month == DateTime.december && utc.day == 31));
 
 String _requiredText(String value, String name) {
   if (value.trim().isEmpty) {

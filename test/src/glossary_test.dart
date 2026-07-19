@@ -198,7 +198,7 @@ void main() {
       );
     });
 
-    test('requires an ISO date-time with an explicit timezone', () {
+    test('accepts RFC 3339 date-times and normalizes offsets to UTC', () {
       final base = <String, Object?>{
         'format': 'dashronym.glossary',
         'schemaVersion': 1,
@@ -206,19 +206,144 @@ void main() {
         'entries': <Object?>[],
       };
 
+      DashronymGlossary decode(String updatedAt) =>
+          DashronymGlossary.fromJson({...base, 'updatedAt': updatedAt});
+
+      expect(
+        decode('2026-07-19T02:30:00.123456789-06:00').updatedAt,
+        DateTime.utc(2026, 7, 19, 8, 30, 0, 123, 456),
+      );
+      expect(
+        decode('2026-07-19t08:30:00z').updatedAt,
+        DateTime.utc(2026, 7, 19, 8, 30),
+      );
+      expect(
+        decode('1990-12-31T15:59:60-08:00').updatedAt,
+        DateTime.utc(1991),
+      );
+      expect(
+        decode('2026-07-19T08:30:00-00:00').updatedAt,
+        DateTime.utc(2026, 7, 19, 8, 30),
+      );
+    });
+
+    test('rejects non-RFC 3339 date-time syntax', () {
+      final base = <String, Object?>{
+        'format': 'dashronym.glossary',
+        'schemaVersion': 1,
+        'name': 'Glossary',
+        'entries': <Object?>[],
+      };
+      final invalidValues = [
+        '2026-07-19 08:30:00Z',
+        '2026-07-19T08:30Z',
+        '2026-07-19T08:30:00',
+        '2026-07-19T08:30:00+0000',
+        '2026-07-19T08:30:00+00',
+        '2026-07-19T08:30:00,5Z',
+        '2026-07-19T08:30:00Z\n',
+        'not-a-dateZ',
+      ];
+
+      for (final updatedAt in invalidValues) {
+        expect(
+          () => DashronymGlossary.fromJson({
+            ...base,
+            'updatedAt': updatedAt,
+          }),
+          _formatExceptionContaining('RFC 3339'),
+          reason: updatedAt,
+        );
+      }
+    });
+
+    test('rejects normalized calendar, clock, and offset components', () {
+      final base = <String, Object?>{
+        'format': 'dashronym.glossary',
+        'schemaVersion': 1,
+        'name': 'Glossary',
+        'entries': <Object?>[],
+      };
+      final invalidValues = [
+        '2026-01-42T08:30:00Z',
+        '2025-02-29T08:30:00Z',
+        '2026-00-01T08:30:00Z',
+        '2026-13-01T08:30:00Z',
+        '2026-07-00T08:30:00Z',
+        '2026-07-19T24:30:00Z',
+        '2026-07-19T08:60:00Z',
+        '2026-07-19T08:30:61Z',
+        '2026-07-19T08:30:60Z',
+        '2026-07-19T08:30:00+24:00',
+        '2026-07-19T08:30:00-01:60',
+      ];
+
+      for (final updatedAt in invalidValues) {
+        expect(
+          () => DashronymGlossary.fromJson({
+            ...base,
+            'updatedAt': updatedAt,
+          }),
+          _formatExceptionContaining('RFC 3339'),
+          reason: updatedAt,
+        );
+      }
+    });
+
+    test('requires a schema-serializable four-digit UTC year', () {
+      final glossary = DashronymGlossary(name: 'Glossary');
+      expect(
+        DashronymGlossary(
+          name: 'First supported year',
+          updatedAt: DateTime.utc(0),
+        ).toJson()['updatedAt'],
+        '0000-01-01T00:00:00.000Z',
+      );
+      expect(
+        DashronymGlossary(
+          name: 'Last supported year',
+          updatedAt: DateTime.utc(9999, 12, 31, 23, 59, 59),
+        ).toJson()['updatedAt'],
+        '9999-12-31T23:59:59.000Z',
+      );
+
+      final outOfRangeYears = [DateTime.utc(-1), DateTime.utc(10000)];
+
+      for (final updatedAt in outOfRangeYears) {
+        expect(
+          () => DashronymGlossary(
+            name: 'Glossary',
+            updatedAt: updatedAt,
+          ),
+          throwsArgumentError,
+          reason: '$updatedAt',
+        );
+        expect(
+          () => glossary.copyWith(updatedAt: updatedAt),
+          throwsArgumentError,
+          reason: '$updatedAt',
+        );
+      }
+
+      final encodedBase = <String, Object?>{
+        'format': 'dashronym.glossary',
+        'schemaVersion': 1,
+        'name': 'Glossary',
+        'entries': <Object?>[],
+      };
       expect(
         () => DashronymGlossary.fromJson({
-          ...base,
-          'updatedAt': '2026-07-19T08:30:00',
+          ...encodedBase,
+          'updatedAt': '0000-01-01T00:00:00+00:01',
         }),
-        _formatExceptionContaining('timezone'),
+        _formatExceptionContaining('four-digit year'),
       );
       expect(
         () => DashronymGlossary.fromJson({
-          ...base,
-          'updatedAt': 'not-a-dateZ',
+          ...encodedBase,
+          'updatedAt': '9999-12-31T23:59:59-00:01',
         }),
-        _formatExceptionContaining('ISO 8601'),
+        _formatExceptionContaining('four-digit year'),
       );
     });
 
@@ -247,13 +372,22 @@ void main() {
       final schema =
           jsonDecode(
                 File(
-                  'schema/dashronym-glossary.schema.json',
+                  'schema/v1/dashronym-glossary.schema.json',
                 ).readAsStringSync(),
               )
               as Map<String, Object?>;
       final properties = schema['properties'] as Map<String, Object?>;
 
       expect(schema[r'$schema'], contains('2020-12'));
+      expect(
+        schema[r'$id'],
+        'https://raw.githubusercontent.com/dancingskylab/dashronym/'
+        'v0.1.0/schema/v1/dashronym-glossary.schema.json',
+      );
+      expect(
+        schema['description'],
+        contains('canonical acronym'),
+      );
       expect(
         (properties['format'] as Map<String, Object?>)['const'],
         DashronymGlossary.supportedFormat,
