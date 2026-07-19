@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/dancingskylab/dashronym/main/schema/dashronym-glossary.schema.json",
+  "title": "Dashronym Glossary",
+  "description": "Portable Dashronym glossary interchange format, schema version 1.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "schemaVersion",
+    "name",
+    "entries"
+  ],
+  "properties": {
+    "format": {
+      "const": "dashronym.glossary"
+    },
+    "schemaVersion": {
+      "const": 1
+    },
+    "name": {
+      "$ref": "#/$defs/nonBlankString"
+    },
+    "id": {
+      "$ref": "#/$defs/nonBlankString"
+    },
+    "version": {
+      "$ref": "#/$defs/nonBlankString"
+    },
+    "locale": {
+      "$ref": "#/$defs/nonBlankString"
+    },
+    "license": {
+      "$ref": "#/$defs/nonBlankString"
+    },
+    "source": {
+      "$ref": "#/$defs/nonBlankString"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "metadata": {
+      "$ref": "#/$defs/metadata"
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/entry"
+      }
+    }
+  },
+  "$defs": {
+    "nonBlankString": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^\\S(?:[\\s\\S]*\\S)?$"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/jsonValue"
+      },
+      "default": {}
+    },
+    "jsonValue": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/jsonValue"
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/jsonValue"
+          }
+        }
+      ]
+    },
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "acronym",
+        "expansion"
+      ],
+      "properties": {
+        "acronym": {
+          "$ref": "#/$defs/nonBlankString"
+        },
+        "expansion": {
+          "$ref": "#/$defs/nonBlankString"
+        },
+        "definition": {
+          "$ref": "#/$defs/nonBlankString"
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonBlankString"
+          },
+          "uniqueItems": true,
+          "default": []
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonBlankString"
+          },
+          "uniqueItems": true,
+          "default": []
+        },
+        "source": {
+          "$ref": "#/$defs/nonBlankString"
+        },
+        "metadata": {
+          "$ref": "#/$defs/metadata"
+        }
+      }
+    }
+  }
+}
