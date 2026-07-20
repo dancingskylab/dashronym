@@ -935,7 +935,10 @@ class _TooltipViewportClamp extends StatelessWidget {
           constraints: appliedConstraints,
           child: ConstrainedBox(
             constraints: appliedConstraints,
-            child: ClipRect(child: constrainedChild),
+            // Material elevation is paint overflow and must remain visible
+            // outside the card's layout bounds. The stock card and custom
+            // scroll host already clip their own overflowing contents.
+            child: constrainedChild,
           ),
         );
       },

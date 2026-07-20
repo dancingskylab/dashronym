@@ -72,6 +72,8 @@ upgrade examples and behavior changes.
   `semanticsLabel`.
 - Corrected RTL/edge positioning, compact-height clamping, long-definition
   scrolling, and stale overlay dismissal during viewport changes.
+- Allowed Material elevation shadows to paint outside tooltip layout bounds
+  instead of cropping them to a rectangular viewport clamp.
 
 ## 0.0.10
 

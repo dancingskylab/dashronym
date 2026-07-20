@@ -135,6 +135,35 @@ void main() {
     expect(bottomLeft.dy, lessThanOrEqualTo(screenSize.height));
   });
 
+  testWidgets('Elevated tooltip is not clipped to its layout bounds', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _testHarness(
+        const AcronymInline(
+          acronym: 'CLI',
+          description: 'Command Line Interface',
+          theme: DashronymTheme(
+            cardElevation: 24,
+            enableHover: false,
+          ),
+          textStyle: TextStyle(),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('CLI'));
+    await tester.pumpAndSettle();
+
+    final card = find.byType(DashronymTooltipCard);
+    expect(card, findsOneWidget);
+    expect(
+      find.ancestor(of: card, matching: find.byType(ClipRect)),
+      findsNothing,
+      reason: 'A tight ancestor clip shears Material elevation shadows.',
+    );
+  });
+
   testWidgets('Hover shows and hides tooltip when enabled', (tester) async {
     const hoverTheme = DashronymTheme(
       enableHover: true,
