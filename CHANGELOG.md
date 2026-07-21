@@ -1,3 +1,10 @@
+## Unreleased
+
+### Changed
+
+- Removed unreliable pub.dev vanity-metric badges while retaining badges for
+  CI, the published version, enforced coverage floors, and licensing.
+
 ## 0.1.0 - 2026-07-20
 
 This release establishes the accessible Flutter interaction contract and the

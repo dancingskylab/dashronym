@@ -2,9 +2,6 @@
 
 [![CI](https://github.com/dancingskylab/dashronym/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/dancingskylab/dashronym/actions/workflows/ci.yml)
 [![pub package](https://img.shields.io/pub/v/dashronym.svg)](https://pub.dev/packages/dashronym)
-[![pub points](https://img.shields.io/pub/points/dashronym)](https://pub.dev/packages/dashronym/score)
-[![pub likes](https://img.shields.io/pub/likes/dashronym)](https://pub.dev/packages/dashronym/score)
-[![pub popularity](https://img.shields.io/pub/popularity/dashronym)](https://pub.dev/packages/dashronym/score)
 [![coverage gate](https://img.shields.io/badge/coverage-%E2%89%A595%25%20lines%20%7C%20%E2%89%A585%25%20branches-brightgreen)](https://github.com/dancingskylab/dashronym/actions/workflows/ci.yml)
 [![license](https://img.shields.io/github/license/dancingskylab/dashronym)](LICENSE)
 
