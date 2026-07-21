@@ -1,4 +1,4 @@
-## 0.1.0 - 2026-07-19
+## 0.1.0 - 2026-07-20
 
 This release establishes the accessible Flutter interaction contract and the
 first portable glossary-data contract. See [MIGRATION.md](MIGRATION.md) for
