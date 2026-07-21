@@ -54,7 +54,8 @@ jobs:
         run: flutter analyze --fatal-infos
 
       - name: Run tests
-        run: flutter test
+        # Pixel goldens are verified on their canonical macOS renderer below.
+        run: flutter test --exclude-tags golden
 
       - name: Build API documentation without warnings
         if: matrix.flutter-version == env.LATEST_FLUTTER_VERSION
@@ -91,7 +92,8 @@ jobs:
         run: flutter pub get
 
       - name: Collect line and branch coverage
-        run: flutter test --coverage --branch-coverage
+        run: >-
+          flutter test --exclude-tags golden --coverage --branch-coverage
 
       - name: Enforce coverage floors
         run: >-
@@ -107,3 +109,25 @@ jobs:
           path: coverage/lcov.info
           if-no-files-found: error
           retention-days: 14
+
+  goldens:
+    name: Golden tests
+    runs-on: macos-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up latest supported Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.LATEST_FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Resolve dependencies
+        run: flutter pub get
+
+      - name: Verify macOS golden images
+        run: flutter test --tags golden

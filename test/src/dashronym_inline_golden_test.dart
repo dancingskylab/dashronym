@@ -60,7 +60,7 @@ void main() {
       find.byType(MaterialApp),
       matchesGoldenFile('goldens/dashronym_inline_default.png'),
     );
-  });
+  }, tags: const ['golden']);
 
   testWidgets('DashronymInline golden - open state', (tester) async {
     await _pumpInline(tester);
@@ -70,7 +70,7 @@ void main() {
       find.byType(MaterialApp),
       matchesGoldenFile('goldens/dashronym_inline_open.png'),
     );
-  });
+  }, tags: const ['golden']);
 
   testWidgets('DashronymInline golden - hovered state', (tester) async {
     const hoverTheme = DashronymTheme(
@@ -94,7 +94,7 @@ void main() {
 
     await gesture.removePointer();
     await tester.pump(const Duration(milliseconds: 120));
-  });
+  }, tags: const ['golden']);
 
   testWidgets('DashronymInline golden - RTL open state', (tester) async {
     await _pumpInline(tester, textDirection: TextDirection.rtl);
@@ -104,7 +104,7 @@ void main() {
       find.byType(MaterialApp),
       matchesGoldenFile('goldens/dashronym_inline_rtl_open.png'),
     );
-  });
+  }, tags: const ['golden']);
 
   testWidgets('DashronymInline golden - flipped above trigger', (tester) async {
     await _pumpInline(
@@ -119,7 +119,7 @@ void main() {
       find.byType(MaterialApp),
       matchesGoldenFile('goldens/dashronym_inline_flipped.png'),
     );
-  });
+  }, tags: const ['golden']);
 
   testWidgets('DashronymInline golden - landscape layout', (tester) async {
     await _pumpInline(
@@ -134,7 +134,7 @@ void main() {
       find.byType(MaterialApp),
       matchesGoldenFile('goldens/dashronym_inline_landscape.png'),
     );
-  });
+  }, tags: const ['golden']);
 
   testWidgets('Custom tooltip builder clamps width in landscape', (
     tester,

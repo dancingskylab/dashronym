@@ -796,6 +796,10 @@ class _DashronymInlineState extends State<DashronymInline>
         : AttributedString(widget.acronym, attributes: labelAttributes);
 
     return Semantics(
+      // Flutter 3.38 requires nodes that assign a locale to their subtree to
+      // establish a semantics container. Keep this conditional so triggers
+      // without authored locale metadata preserve their existing tree shape.
+      container: widget.locale != null,
       button: true,
       expanded: _tooltipVisible,
       label: attributedLabel == null ? widget.acronym : null,

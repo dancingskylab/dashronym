@@ -207,6 +207,14 @@ void main() {
       expect(inline.locale, const Locale('fr'));
       expect(inline.spellOut, isTrue);
       expect(inline.semanticsIdentifier, 'authored-api');
+      final inlineSemanticsFinder = find.byWidgetPredicate(
+        (widget) =>
+            widget is Semantics &&
+            widget.properties.identifier == 'authored-api',
+      );
+      expect(inlineSemanticsFinder, findsOneWidget);
+      final inlineSemantics = tester.widget<Semantics>(inlineSemanticsFinder);
+      expect(inlineSemantics.container, isTrue);
       expect(find.bySemanticsIdentifier('authored-api'), findsOneWidget);
 
       final node = tester.getSemantics(
