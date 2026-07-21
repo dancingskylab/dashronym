@@ -25,8 +25,11 @@ run:
 
 ```sh
 flutter pub get
-flutter test
+flutter test --exclude-tags golden
 ```
+
+macOS contributors can additionally run the canonical pixel comparisons with
+`flutter test --tags golden`.
 
 The project includes Dart agent skills in `.agents/skills`. Editors that
 support the Dart and Flutter MCP server can also use analyzer, test, runtime,
@@ -39,14 +42,18 @@ Run the same checks as CI before requesting review:
 ```sh
 dart format --output=none --set-exit-if-changed .
 flutter analyze --fatal-infos
-flutter test
-flutter test --coverage --branch-coverage
+flutter test --exclude-tags golden
+flutter test --exclude-tags golden --coverage --branch-coverage
 python3 .github/scripts/check_lcov.py coverage/lcov.info \
   --min-lines 95 \
   --min-branches 85
 dart doc --output .dart_tool/api-docs
 dart pub publish --dry-run
 ```
+
+On macOS, also run `flutter test --tags golden`. Pixel goldens use macOS as
+their canonical renderer; Linux CI runs the complete behavioral suite without
+comparing platform-dependent pixels.
 
 CI requires at least 95% line coverage and 85% branch coverage. Coverage is a
 guardrail, not a substitute for meaningful assertions. New behavior should
@@ -74,6 +81,9 @@ To regenerate the inline goldens after an intentional visual change:
 flutter test --update-goldens test/src/dashronym_inline_golden_test.dart
 git diff -- test
 ```
+
+Regenerate and review these images on macOS so they match the dedicated golden
+CI job.
 
 ## Public API and compatibility
 

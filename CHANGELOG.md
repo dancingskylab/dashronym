@@ -23,8 +23,10 @@ upgrade examples and behavior changes.
 - Added recursive `DashronymText.rich` and `Text.rich(...).dashronyms()`
   support while preserving authored span metadata and existing widget spans.
 - Added a minimum/latest Flutter CI matrix, coverage gates, warning-free
-  dartdoc and publication checks, plus contributing, security, migration,
-  release, and roadmap documentation.
+  dartdoc and publication checks, a canonical macOS golden job, plus
+  contributing, security, migration, release, and roadmap documentation.
+- Added README badges for CI, pub.dev health metrics, enforced coverage floors,
+  and licensing.
 
 ### Changed
 
@@ -58,6 +60,8 @@ upgrade examples and behavior changes.
   package library does not import it.
 - Updated package metadata and links to the canonical
   `dancingskylab/dashronym` repository.
+- Reduced the roadmap to forward-looking priorities so completed release work
+  remains in this changelog instead of going stale in two places.
 
 ### Fixed
 
@@ -80,6 +84,8 @@ upgrade examples and behavior changes.
   while retaining that scale for tooltip content and direct inline widgets.
 - Kept interactive acronym semantics reachable when callers provide an outer
   `semanticsLabel`.
+- Kept authored locale semantics compatible with Flutter 3.38 by establishing
+  the required semantics container.
 - Corrected RTL/edge positioning, compact-height clamping, long-definition
   scrolling, and stale overlay dismissal during viewport changes.
 - Allowed Material elevation shadows to paint outside tooltip layout bounds

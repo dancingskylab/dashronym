@@ -149,8 +149,9 @@ handling across entries.
 `dashronym_core.dart` has no Flutter imports in its own import graph, so it
 keeps domain code separate inside Flutter-SDK projects. The `dashronym` package
 itself still declares an SDK dependency on Flutter. A standalone Dart CLI or
-server therefore cannot depend on this package without a Flutter SDK; a
-separately published core package is future roadmap work.
+server therefore cannot depend on this package without a Flutter SDK; see the
+[portable Dart runtime priorities](docs/ROADMAP.md#portable-dart-runtime) for
+the requirements that precede a separate core package.
 
 ### Shared configuration and app theming
 

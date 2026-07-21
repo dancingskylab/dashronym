@@ -21,7 +21,7 @@ After 1.0, follow Semantic Versioning.
 ## 1. Define the release
 
 1. Choose the version and list its user-visible outcomes.
-2. Confirm which roadmap milestone it advances.
+2. Confirm which documented priority or tracked issue it advances.
 3. Identify public API, semantics, focus, matching, layout, visual, minimum-SDK,
    and performance changes.
 4. For every breaking change, add compile-ready before/after examples to
@@ -61,14 +61,18 @@ flutter --version
 flutter pub get
 dart format --output=none --set-exit-if-changed .
 flutter analyze --fatal-infos
-flutter test
-flutter test --coverage --branch-coverage
+flutter test --exclude-tags golden
+flutter test --exclude-tags golden --coverage --branch-coverage
 python3 .github/scripts/check_lcov.py coverage/lcov.info \
   --min-lines 95 \
   --min-branches 85
 dart doc --output .dart_tool/api-docs
 dart pub publish --dry-run
 ```
+
+Run `flutter test --tags golden` on macOS, which is the canonical renderer for
+the checked-in pixel baselines. Linux CI runs all behavioral tests but excludes
+platform-dependent golden comparisons.
 
 Treat dartdoc warnings as failures. Inspect all publication files listed by the
 dry run. Confirm that generated output, credentials, internal planning data,
@@ -141,8 +145,8 @@ original version.
 
 ## 7. Post-release verification
 
-- Confirm pub.dev shows the expected version, README, screenshots, SDK
-  constraints, repository link, topics, license, and score.
+- Confirm pub.dev shows the expected version, README, badges, screenshots, SDK
+  constraints, repository link, topics, platform icons, license, and score.
 - Install the published version into a clean temporary Flutter app.
 - Run the README quick start.
 - Confirm the GitHub tag resolves to the published source.

@@ -1,5 +1,13 @@
 # dashronym
 
+[![CI](https://github.com/dancingskylab/dashronym/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/dancingskylab/dashronym/actions/workflows/ci.yml)
+[![pub package](https://img.shields.io/pub/v/dashronym.svg)](https://pub.dev/packages/dashronym)
+[![pub points](https://img.shields.io/pub/points/dashronym)](https://pub.dev/packages/dashronym/score)
+[![pub likes](https://img.shields.io/pub/likes/dashronym)](https://pub.dev/packages/dashronym/score)
+[![pub popularity](https://img.shields.io/pub/popularity/dashronym)](https://pub.dev/packages/dashronym/score)
+[![coverage gate](https://img.shields.io/badge/coverage-%E2%89%A595%25%20lines%20%7C%20%E2%89%A585%25%20branches-brightgreen)](https://github.com/dancingskylab/dashronym/actions/workflows/ci.yml)
+[![license](https://img.shields.io/github/license/dancingskylab/dashronym)](LICENSE)
+
 Dashronym turns known acronyms inside Flutter text into accessible inline
 controls with viewport-safe definition tooltips. It supports simple maps,
 rich glossary entries and aliases, shared app-level configuration, existing
@@ -189,8 +197,8 @@ import 'package:dashronym/dashronym_core.dart';
 That library's import graph is pure Dart, but the current `dashronym` package
 still declares an SDK dependency on Flutter. A Dart-only project that does not
 install Flutter cannot consume this package yet. Publishing a separately
-versioned core package is tracked in the
-[roadmap](https://github.com/dancingskylab/dashronym/blob/main/docs/ROADMAP.md)
+versioned core package is tracked under
+[portable Dart runtime priorities](https://github.com/dancingskylab/dashronym/blob/main/docs/ROADMAP.md#portable-dart-runtime)
 before non-Flutter integrations.
 
 ## Matching behavior
@@ -220,9 +228,9 @@ Use `keepFirst` or `keepLast` only when the import workflow has an intentional,
 documented precedence rule.
 
 Punctuation-aware *bare* terms, escaping, and broader Unicode-aware unmarked
-matching policies are planned explicitly rather than being silently folded
-into legacy bare matching. See the
-[roadmap](https://github.com/dancingskylab/dashronym/blob/main/docs/ROADMAP.md).
+matching policies require explicit future APIs rather than silent changes to
+legacy matching. See the
+[matching priorities](https://github.com/dancingskylab/dashronym/blob/main/docs/ROADMAP.md#matching-and-schema).
 
 ## Existing rich text
 
@@ -375,7 +383,7 @@ Issues and feature proposals belong in the
 [GitHub tracker](https://github.com/dancingskylab/dashronym/issues).
 
 When a visual change is intentional, inspect and regenerate the inline goldens
-with:
+on macOS, the canonical golden renderer, with:
 
 ```sh
 flutter test --update-goldens test/src/dashronym_inline_golden_test.dart

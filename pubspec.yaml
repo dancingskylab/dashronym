@@ -1,15 +1,15 @@
 name: dashronym
 description: Accessible inline acronym glossary tooltips for Flutter, with rich entries, aliases, scoped configuration, and portable JSON.
 version: 0.1.0
-homepage: https://pub.dev/packages/dashronym
+homepage: https://github.com/dancingskylab/dashronym
 repository: https://github.com/dancingskylab/dashronym
 issue_tracker: https://github.com/dancingskylab/dashronym/issues
 topics:
-  - text
-  - tooltip
-  - documentation
   - acronyms
-  - a11y
+  - glossary
+  - tooltip
+  - accessibility
+  - text
 
 screenshots:
   - description: 'Animated overview of Dashronym tooltips responding to user taps.'
