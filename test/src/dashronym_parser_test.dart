@@ -1,13 +1,13 @@
 import 'package:dashronym/dashronym.dart';
-import 'package:dashronym/src/acronym_inline.dart';
-import 'package:dashronym/src/acronym_parser.dart';
-import 'package:dashronym/src/acronym_parser_core.dart';
-import 'package:dashronym/src/acronym_tokens.dart';
+import 'package:dashronym/src/dashronym_inline.dart';
+import 'package:dashronym/src/dashronym_parser.dart';
+import 'package:dashronym/src/dashronym_parser_core.dart';
+import 'package:dashronym/src/dashronym_token.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 DashronymParser _parser() => DashronymParser(
-  registry: AcronymRegistry({'SDK': 'Software Development Kit'}),
+  registry: DashronymRegistry({'SDK': 'Software Development Kit'}),
   config: const DashronymConfig(enableBareAcronyms: true),
   theme: const DashronymTheme(),
   baseStyle: const TextStyle(),
@@ -20,7 +20,7 @@ void main() {
     final widgetSpans = spans.whereType<WidgetSpan>().toList(growable: false);
     expect(widgetSpans, hasLength(1));
     expect(
-      (widgetSpans.single.child as AcronymInline).textScaler,
+      (widgetSpans.single.child as DashronymInline).textScaler,
       TextScaler.noScaling,
     );
     expect(
@@ -31,7 +31,7 @@ void main() {
 
   test('DashronymParser caches spans for identical input', () {
     final core = DashronymParserCore(
-      registry: AcronymRegistry({'SDK': 'Software Development Kit'}),
+      registry: DashronymRegistry({'SDK': 'Software Development Kit'}),
       config: const DashronymConfig(enableBareAcronyms: true),
     );
     final first = core.parse('Using (SDK) daily.');
@@ -42,7 +42,7 @@ void main() {
 
   test('parser cache is bounded and reads promote entries', () {
     final core = DashronymParserCore(
-      registry: AcronymRegistry.empty(),
+      registry: DashronymRegistry.empty(),
       config: const DashronymConfig(),
       cacheCapacity: 2,
     );
@@ -58,28 +58,28 @@ void main() {
   test('parser caches are isolated from other registries', () {
     const input = 'Use the (SDK).';
     final firstRegistry = DashronymParserCore(
-      registry: AcronymRegistry({'SDK': 'First definition'}),
+      registry: DashronymRegistry({'SDK': 'First definition'}),
       config: const DashronymConfig(),
     );
     final secondRegistry = DashronymParserCore(
-      registry: AcronymRegistry({'SDK': 'Second definition'}),
+      registry: DashronymRegistry({'SDK': 'Second definition'}),
       config: const DashronymConfig(),
     );
 
     expect(
       firstRegistry.parse(input),
       const [
-        TextToken('Use the '),
-        AcronymToken(acronym: 'SDK', description: 'First definition'),
-        TextToken('.'),
+        DashronymTextToken('Use the '),
+        DashronymMatchToken(acronym: 'SDK', description: 'First definition'),
+        DashronymTextToken('.'),
       ],
     );
     expect(
       secondRegistry.parse(input),
       const [
-        TextToken('Use the '),
-        AcronymToken(acronym: 'SDK', description: 'Second definition'),
-        TextToken('.'),
+        DashronymTextToken('Use the '),
+        DashronymMatchToken(acronym: 'SDK', description: 'Second definition'),
+        DashronymTextToken('.'),
       ],
     );
   });
@@ -87,30 +87,30 @@ void main() {
   test('empty registry cannot receive cached tokens from another registry', () {
     const input = 'Cache isolation for (SDK).';
     final populatedParser = DashronymParserCore(
-      registry: AcronymRegistry({'SDK': 'Software Development Kit'}),
+      registry: DashronymRegistry({'SDK': 'Software Development Kit'}),
       config: const DashronymConfig(),
     );
     final emptyParser = DashronymParserCore(
-      registry: AcronymRegistry.empty(),
+      registry: DashronymRegistry.empty(),
       config: const DashronymConfig(),
     );
 
     expect(
       populatedParser.parse(input),
       contains(
-        const AcronymToken(
+        const DashronymMatchToken(
           acronym: 'SDK',
           description: 'Software Development Kit',
         ),
       ),
     );
-    expect(emptyParser.parse(input), const [TextToken(input)]);
+    expect(emptyParser.parse(input), const [DashronymTextToken(input)]);
   });
 
   test('parser snapshots marker configuration when it is created', () {
     final markers = ['[]'];
     final parser = DashronymParserCore(
-      registry: AcronymRegistry({'SDK': 'Software Development Kit'}),
+      registry: DashronymRegistry({'SDK': 'Software Development Kit'}),
       config: DashronymConfig(acceptMarkers: markers),
     );
 
@@ -121,25 +121,25 @@ void main() {
     expect(
       parser.parse('[SDK]'),
       const [
-        AcronymToken(
+        DashronymMatchToken(
           acronym: 'SDK',
           description: 'Software Development Kit',
         ),
       ],
     );
-    expect(parser.parse('(SDK)'), const [TextToken('(SDK)')]);
+    expect(parser.parse('(SDK)'), const [DashronymTextToken('(SDK)')]);
   });
 
   test('parser supports marker pairs made of non-BMP characters', () {
     final parser = DashronymParserCore(
-      registry: AcronymRegistry({'SDK': 'Software Development Kit'}),
+      registry: DashronymRegistry({'SDK': 'Software Development Kit'}),
       config: const DashronymConfig(acceptMarkers: ['🔹🔸']),
     );
 
     expect(
       parser.parse('🔹SDK🔸'),
       const [
-        AcronymToken(
+        DashronymMatchToken(
           acronym: 'SDK',
           description: 'Software Development Kit',
         ),
@@ -150,7 +150,7 @@ void main() {
   group('explicit marker matching', () {
     test('accepts registered punctuation and mixed-case terms', () {
       final parser = DashronymParserCore(
-        registry: AcronymRegistry({
+        registry: DashronymRegistry({
           'C++': 'C Plus Plus',
           '.NET': 'Microsoft .NET',
           'R&D': 'Research and Development',
@@ -162,34 +162,37 @@ void main() {
       expect(
         parser.parse('Use (C++), (.NET), (R&D), and (OAuth).'),
         const [
-          TextToken('Use '),
-          AcronymToken(acronym: 'C++', description: 'C Plus Plus'),
-          TextToken(', '),
-          AcronymToken(acronym: '.NET', description: 'Microsoft .NET'),
-          TextToken(', '),
-          AcronymToken(
+          DashronymTextToken('Use '),
+          DashronymMatchToken(acronym: 'C++', description: 'C Plus Plus'),
+          DashronymTextToken(', '),
+          DashronymMatchToken(acronym: '.NET', description: 'Microsoft .NET'),
+          DashronymTextToken(', '),
+          DashronymMatchToken(
             acronym: 'R&D',
             description: 'Research and Development',
           ),
-          TextToken(', and '),
-          AcronymToken(acronym: 'OAuth', description: 'Open Authorization'),
-          TextToken('.'),
+          DashronymTextToken(', and '),
+          DashronymMatchToken(
+            acronym: 'OAuth',
+            description: 'Open Authorization',
+          ),
+          DashronymTextToken('.'),
         ],
       );
     });
 
     test('resolves aliases and honors registry case sensitivity', () {
-      final entry = AcronymEntry(
+      final entry = DashronymEntry(
         acronym: 'DOTNET',
         expansion: 'Microsoft .NET',
         aliases: const ['.NET'],
       );
       final insensitive = DashronymParserCore(
-        registry: AcronymRegistry.fromAcronymEntries([entry]),
+        registry: DashronymRegistry.fromEntries([entry]),
         config: const DashronymConfig(),
       );
       final sensitive = DashronymParserCore(
-        registry: AcronymRegistry.fromAcronymEntries(
+        registry: DashronymRegistry.fromEntries(
           [entry],
           caseInsensitive: false,
         ),
@@ -199,21 +202,21 @@ void main() {
       expect(
         insensitive.parse('(.net)'),
         const [
-          AcronymToken(acronym: '.net', description: 'Microsoft .NET'),
+          DashronymMatchToken(acronym: '.net', description: 'Microsoft .NET'),
         ],
       );
-      expect(sensitive.parse('(.net)'), const [TextToken('(.net)')]);
+      expect(sensitive.parse('(.net)'), const [DashronymTextToken('(.net)')]);
       expect(
         sensitive.parse('(.NET)'),
         const [
-          AcronymToken(acronym: '.NET', description: 'Microsoft .NET'),
+          DashronymMatchToken(acronym: '.NET', description: 'Microsoft .NET'),
         ],
       );
     });
 
     test('measures explicit terms in Unicode scalar values', () {
       final parser = DashronymParserCore(
-        registry: AcronymRegistry({
+        registry: DashronymRegistry({
           'X': 'One scalar',
           'A😀': 'Two scalars',
           'C++': 'Three scalars',
@@ -225,11 +228,11 @@ void main() {
       expect(
         parser.parse('(X) (A😀) (C++) (OAuth)'),
         const [
-          TextToken('(X) '),
-          AcronymToken(acronym: 'A😀', description: 'Two scalars'),
-          TextToken(' '),
-          AcronymToken(acronym: 'C++', description: 'Three scalars'),
-          TextToken(' (OAuth)'),
+          DashronymTextToken('(X) '),
+          DashronymMatchToken(acronym: 'A😀', description: 'Two scalars'),
+          DashronymTextToken(' '),
+          DashronymMatchToken(acronym: 'C++', description: 'Three scalars'),
+          DashronymTextToken(' (OAuth)'),
         ],
       );
     });
@@ -239,13 +242,13 @@ void main() {
       () {
         const input = '(A)B) (unknown)';
         final parser = DashronymParserCore(
-          registry: AcronymRegistry({
+          registry: DashronymRegistry({
             'A)B': 'Must not skip the first closer',
           }),
           config: const DashronymConfig(),
         );
 
-        expect(parser.parse(input), const [TextToken(input)]);
+        expect(parser.parse(input), const [DashronymTextToken(input)]);
       },
     );
 
@@ -254,13 +257,13 @@ void main() {
         final acronym = 'OAuth${lineBreak}2';
         final input = '($acronym)';
         final parser = DashronymParserCore(
-          registry: AcronymRegistry({acronym: 'Must not cross a line break'}),
+          registry: DashronymRegistry({acronym: 'Must not cross a line break'}),
           config: const DashronymConfig(),
         );
 
         expect(
           parser.parse(input),
-          [TextToken(input)],
+          [DashronymTextToken(input)],
           reason: 'U+${lineBreak.runes.single.toRadixString(16)}',
         );
       }
@@ -269,7 +272,7 @@ void main() {
 
   test('DashronymParser matches bare acronyms within length bounds', () {
     final parser = DashronymParser(
-      registry: AcronymRegistry({
+      registry: DashronymRegistry({
         'SDK': 'Software Development Kit',
         'CI': 'Continuous Integration',
       }),
@@ -290,7 +293,7 @@ void main() {
 
   test('bare matching remains conservative ALL-CAPS ASCII', () {
     final parser = DashronymParserCore(
-      registry: AcronymRegistry({
+      registry: DashronymRegistry({
         'OAuth': 'Open Authorization',
         'C++': 'C Plus Plus',
         '.NET': 'Microsoft .NET',
@@ -303,8 +306,8 @@ void main() {
     expect(
       parser.parse('OAuth C++ .NET R&D API'),
       const [
-        TextToken('OAuth C++ .NET R&D '),
-        AcronymToken(
+        DashronymTextToken('OAuth C++ .NET R&D '),
+        DashronymMatchToken(
           acronym: 'API',
           description: 'Application Programming Interface',
         ),
@@ -313,7 +316,7 @@ void main() {
   });
 
   test('DashronymParser threads rich entries into inline widgets', () {
-    final entry = AcronymEntry(
+    final entry = DashronymEntry(
       acronym: 'SDK',
       expansion: 'Software Development Kit',
       definition: 'Tools used to build software.',
@@ -321,7 +324,7 @@ void main() {
       source: 'internal-glossary',
     );
     final parser = DashronymParser(
-      registry: AcronymRegistry.fromAcronymEntries([entry]),
+      registry: DashronymRegistry.fromEntries([entry]),
       config: const DashronymConfig(enableBareAcronyms: true),
       theme: const DashronymTheme(),
       baseStyle: const TextStyle(),
@@ -331,6 +334,6 @@ void main() {
         .parseToSpans('SDK')
         .whereType<WidgetSpan>()
         .single;
-    expect((widgetSpan.child as AcronymInline).entry, same(entry));
+    expect((widgetSpan.child as DashronymInline).entry, same(entry));
   });
 }

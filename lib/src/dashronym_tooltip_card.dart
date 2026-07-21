@@ -10,7 +10,7 @@ import 'package:flutter/material.dart';
 
 import 'dashronym_localizations.dart';
 import 'dashronym_theme.dart';
-import 'tooltip_constraints.dart';
+import 'dashronym_tooltip_constraints.dart';
 
 /// A compact, accessible tooltip card displaying an acronym and its description.
 ///
@@ -106,16 +106,16 @@ class DashronymTooltipCard extends StatelessWidget {
     );
 
     Widget result = card;
-    if (TooltipConstraintScope.maybeOf(context) == null) {
+    if (DashronymTooltipConstraintScope.maybeOf(context) == null) {
       result = LayoutBuilder(
         builder: (context, constraints) {
           final mqForBuilder = MediaQuery.maybeOf(context);
-          final tooltipConstraints = TooltipConstraintsResolver.resolve(
+          final tooltipConstraints = DashronymTooltipConstraints.resolve(
             constraints: constraints,
             mediaQuery: mqForBuilder ?? mq,
             theme: theme,
           );
-          return TooltipConstraintScope(
+          return DashronymTooltipConstraintScope(
             constraints: tooltipConstraints,
             child: ConstrainedBox(
               constraints: tooltipConstraints,
@@ -129,7 +129,7 @@ class DashronymTooltipCard extends StatelessWidget {
     return Semantics(
       container: true,
       // Platforms that support explicit announcements use the single
-      // announcement emitted by AcronymInline. Other platforms can discover
+      // announcement emitted by DashronymInline. Other platforms can discover
       // the newly inserted semantic live region without a disruptive event.
       liveRegion: !MediaQuery.supportsAnnounceOf(context),
       label: strings.tooltipLabel(acronym),

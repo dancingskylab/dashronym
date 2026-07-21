@@ -1,5 +1,5 @@
 import 'package:dashronym/dashronym.dart';
-import 'package:dashronym/src/acronym_inline.dart';
+import 'package:dashronym/src/dashronym_inline.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -18,7 +18,7 @@ void main() {
   testWidgets('Text.dashronyms wraps strings with tooltip spans', (
     tester,
   ) async {
-    final registry = AcronymRegistry({
+    final registry = DashronymRegistry({
       'API': 'Application Programming Interface',
     });
     final widget = const Text(
@@ -27,7 +27,7 @@ void main() {
 
     await tester.pumpWidget(MaterialApp(home: Scaffold(body: widget)));
 
-    expect(find.byType(AcronymInline), findsOneWidget);
+    expect(find.byType(DashronymInline), findsOneWidget);
   });
 
   testWidgets('Text.dashronyms preserves an unmatched rich source tree', (
@@ -39,7 +39,7 @@ void main() {
     );
 
     final result =
-        original.dashronyms(registry: AcronymRegistry({})) as DashronymText;
+        original.dashronyms(registry: DashronymRegistry({})) as DashronymText;
 
     expect(result.text, isEmpty);
     expect(result.inlineSpan, same(original.textSpan));
@@ -85,7 +85,7 @@ void main() {
         semanticsIdentifier: 'rich-copy',
       );
       final result = original.dashronyms(
-        registry: AcronymRegistry({
+        registry: DashronymRegistry({
           'API': 'Application Programming Interface',
           'SDK': 'Software Development Kit',
         }),
@@ -96,7 +96,7 @@ void main() {
         MaterialApp(home: Scaffold(body: result)),
       );
 
-      expect(find.byType(AcronymInline), findsOneWidget);
+      expect(find.byType(DashronymInline), findsOneWidget);
       expect(
         find.byKey(const ValueKey('existing-widget-span')),
         findsOneWidget,
@@ -105,7 +105,7 @@ void main() {
         tester
             .widget<Text>(
               find.descendant(
-                of: find.byType(AcronymInline),
+                of: find.byType(DashronymInline),
                 matching: find.text('API'),
               ),
             )
@@ -159,7 +159,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: DashronymScope(
-          registry: AcronymRegistry({
+          registry: DashronymRegistry({
             'API': 'Application Programming Interface',
           }),
           config: const DashronymConfig(enableBareAcronyms: true),
@@ -170,7 +170,7 @@ void main() {
       ),
     );
 
-    expect(find.byType(AcronymInline), findsOneWidget);
+    expect(find.byType(DashronymInline), findsOneWidget);
   });
 
   testWidgets(
@@ -192,7 +192,7 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: Text.rich(source).dashronyms(
-              registry: AcronymRegistry({
+              registry: DashronymRegistry({
                 'API': 'Application Programming Interface',
               }),
               config: const DashronymConfig(enableBareAcronyms: true),
@@ -201,8 +201,8 @@ void main() {
         ),
       );
 
-      final inline = tester.widget<AcronymInline>(
-        find.byType(AcronymInline),
+      final inline = tester.widget<DashronymInline>(
+        find.byType(DashronymInline),
       );
       expect(inline.locale, const Locale('fr'));
       expect(inline.spellOut, isTrue);
@@ -229,7 +229,7 @@ void main() {
   testWidgets('Text.dashronyms merges inherited style and bold text', (
     tester,
   ) async {
-    final registry = AcronymRegistry({'SDK': 'Software Development Kit'});
+    final registry = DashronymRegistry({'SDK': 'Software Development Kit'});
 
     await tester.pumpWidget(
       MaterialApp(
@@ -256,7 +256,7 @@ void main() {
   testWidgets('Text.dashronyms keeps explicit non-inherited style', (
     tester,
   ) async {
-    final registry = AcronymRegistry({'SDK': 'Software Development Kit'});
+    final registry = DashronymRegistry({'SDK': 'Software Development Kit'});
 
     await tester.pumpWidget(
       MaterialApp(

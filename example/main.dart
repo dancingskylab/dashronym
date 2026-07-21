@@ -27,45 +27,45 @@ class DashronymShowcase extends StatelessWidget {
       version: '1',
       locale: 'en',
       entries: [
-        AcronymEntry(
+        DashronymEntry(
           acronym: 'SDK',
           expansion: 'Software Development Kit',
           aliases: const ['DEVKIT'],
           tags: const ['software', 'tooling'],
         ),
-        AcronymEntry(
+        DashronymEntry(
           acronym: 'API',
           expansion: 'Application Programming Interface',
           definition: 'A defined interface used by software components.',
           tags: const ['software', 'integration'],
           source: 'https://en.wikipedia.org/wiki/API',
         ),
-        AcronymEntry(
+        DashronymEntry(
           acronym: 'CLI',
           expansion: 'Command Line Interface',
           tags: const ['tooling'],
         ),
-        AcronymEntry(
+        DashronymEntry(
           acronym: 'FFI',
           expansion: 'Foreign Function Interface',
           tags: const ['interop'],
         ),
-        AcronymEntry(
+        DashronymEntry(
           acronym: 'IDE',
           expansion: 'Integrated Development Environment',
           tags: const ['tooling'],
         ),
-        AcronymEntry(
+        DashronymEntry(
           acronym: 'LSP',
           expansion: 'Language Server Protocol',
           tags: const ['tooling', 'protocol'],
         ),
-        AcronymEntry(
+        DashronymEntry(
           acronym: 'UI',
           expansion: 'User Interface',
           tags: const ['design'],
         ),
-        AcronymEntry(
+        DashronymEntry(
           acronym: 'AOT',
           expansion: 'Ahead Of Time compilation',
           tags: const ['compiler'],

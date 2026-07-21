@@ -20,7 +20,7 @@ void main() {
           'reviewed': true,
         },
         entries: [
-          AcronymEntry(
+          DashronymEntry(
             acronym: 'API',
             expansion: 'Application Programming Interface',
             definition: 'A contract used by software components.',
@@ -73,7 +73,7 @@ void main() {
 
     test('defensively copies entries and deeply freezes metadata', () {
       final entries = [
-        AcronymEntry(acronym: 'API', expansion: 'Expansion'),
+        DashronymEntry(acronym: 'API', expansion: 'Expansion'),
       ];
       final nested = <Object?>['stable'];
       final metadata = <String, Object?>{'nested': nested};
@@ -83,7 +83,7 @@ void main() {
         entries: entries,
         metadata: metadata,
       );
-      entries.add(AcronymEntry(acronym: 'SDK', expansion: 'Other'));
+      entries.add(DashronymEntry(acronym: 'SDK', expansion: 'Other'));
       nested.add('changed');
       metadata['later'] = true;
 
@@ -91,7 +91,7 @@ void main() {
       expect(glossary.metadata['nested'], ['stable']);
       expect(
         () => glossary.entries.add(
-          AcronymEntry(acronym: 'CLI', expansion: 'Command-line interface'),
+          DashronymEntry(acronym: 'CLI', expansion: 'Command-line interface'),
         ),
         throwsUnsupportedError,
       );
@@ -127,7 +127,7 @@ void main() {
     });
 
     test('toRegistry provides direct canonical and alias lookup', () {
-      final entry = AcronymEntry(
+      final entry = DashronymEntry(
         acronym: 'API',
         expansion: 'Application Programming Interface',
         aliases: const ['Web API'],

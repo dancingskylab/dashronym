@@ -7,7 +7,7 @@
 /// needed later.
 library;
 
-export 'src/acronym_entry.dart';
-export 'src/config.dart';
-export 'src/glossary.dart';
-export 'src/registry.dart';
+export 'src/dashronym_entry.dart';
+export 'src/dashronym_config.dart';
+export 'src/dashronym_glossary.dart';
+export 'src/dashronym_registry.dart';

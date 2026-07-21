@@ -11,20 +11,47 @@ fix may require a faster change.
 
 ## 0.0.10 to 0.1.0
 
-The original map-based API remains supported:
+### Consistent package type names
+
+Version 0.1.0 standardizes package-owned Dart declarations and filenames on
+the `Dashronym` name. The domain language remains unchanged: entries still
+have an `acronym` field, glossary JSON still uses `"acronym"`, and matching
+options such as `enableBareAcronyms` keep their established names.
+
+Update these public names:
+
+| Before or development-preview name | 0.1.0 name |
+| --- | --- |
+| `AcronymRegistry` | `DashronymRegistry` |
+| `AcronymEntry` | `DashronymEntry` |
+| `AcronymDuplicatePolicy` | `DashronymDuplicatePolicy` |
+| `AcronymTooltipDetails` | `DashronymTooltipDetails` |
+| `DashronymsTextX` | `DashronymTextExtension` |
+| `AcronymRegistry.fromAcronymEntries(...)` | `DashronymRegistry.fromEntries(...)` |
+| `AcronymRegistry.fromEntries(...)` | `DashronymRegistry.fromMapEntries(...)` |
+
+No deprecated aliases are exported. This is an intentional pre-1.0 cleanup so
+applications have one canonical vocabulary before the package stabilizes.
+Imports from `package:dashronym/src/` remain unsupported; their filenames now
+also match their primary `Dashronym…` declarations.
+
+Ordinary `Text(...).dashronyms()` calls are unchanged. The extension rename
+only affects code that explicitly refers to the extension declaration by name.
+
+The original map data shape remains supported. Most map-based applications
+only need to rename the registry type:
 
 ```dart
 DashronymText(
   'Install the (SDK).',
-  registry: AcronymRegistry({
+  registry: DashronymRegistry({
     'SDK': 'Software Development Kit',
   }),
 );
 ```
 
-Most applications using only this form do not need source changes. Review the
-SDK floor and the interaction, semantics, and layout changes below before
-updating visual or accessibility expectations.
+Review the SDK floor and the interaction, semantics, and layout changes below
+before updating visual or accessibility expectations.
 
 ### Minimum SDK
 
@@ -46,11 +73,11 @@ the minimum supported SDK and the latest stable SDK in CI.
 
 ### Rich entries, aliases, and duplicate handling
 
-Use `AcronymEntry` when a definition needs aliases, tags, provenance, metadata,
+Use `DashronymEntry` when a definition needs aliases, tags, provenance, metadata,
 or a longer explanation:
 
 ```dart
-final entry = AcronymEntry(
+final entry = DashronymEntry(
   acronym: 'API',
   expansion: 'Application Programming Interface',
   definition: 'A contract used by software components.',
@@ -59,7 +86,7 @@ final entry = AcronymEntry(
   source: 'https://example.com/methodology',
 );
 
-final registry = AcronymRegistry.fromAcronymEntries([entry]);
+final registry = DashronymRegistry.fromEntries([entry]);
 ```
 
 `descriptionOf('Web API')` and `entryOf('Web API')` now resolve the canonical
@@ -82,12 +109,13 @@ rich entry. Collection meanings are explicit:
 
 - `entries` and `length` contain/count canonical entries only;
 - `lookupTerms` and `lookupTermCount` include canonical terms and aliases; and
-- `richEntries` contains each retained `AcronymEntry` once.
+- `richEntries` contains each retained `DashronymEntry` once.
 
-The map constructor and `fromEntries` preserve the historical normalized
-last-value-wins behavior. Rich registries reject canonical/alias collisions by
-default. Select `AcronymDuplicatePolicy.keepFirst` or
-`AcronymDuplicatePolicy.keepLast` only when silent conflict resolution is an
+The map constructor and `fromMapEntries` preserve the historical normalized
+last-value-wins behavior. Rich registries created with `fromEntries` reject
+canonical/alias collisions by default. Select
+`DashronymDuplicatePolicy.keepFirst` or
+`DashronymDuplicatePolicy.keepLast` only when silent conflict resolution is an
 intentional import policy. Resolution is atomic: a conflicting rich entry is
 kept or discarded as a whole, including all its aliases.
 
@@ -113,7 +141,7 @@ the published
 [version-1 JSON Schema](schema/v1/dashronym-glossary.schema.json) before
 producing packs.
 The schema validates the portable JSON shape. Import through
-`DashronymGlossary` and build an `AcronymRegistry` as well: those APIs enforce
+`DashronymGlossary` and build a `DashronymRegistry` as well: those APIs enforce
 semantic rules that standard JSON Schema cannot express portably, including an
 alias not repeating its sibling canonical acronym and normalized collision
 handling across entries.
@@ -178,10 +206,10 @@ for the source-level type change:
 final AcronymRegistry registry = dashronymText.registry;
 
 // 0.1.0: use ! only when your code supplied the argument...
-final AcronymRegistry explicitRegistry = dashronymText.registry!;
+final DashronymRegistry explicitRegistry = dashronymText.registry!;
 
 // ...or read the inherited value from a build context.
-final AcronymRegistry inheritedRegistry = DashronymScope.of(context).registry;
+final DashronymRegistry inheritedRegistry = DashronymScope.of(context).registry;
 ```
 
 `DashronymTheme.copyWith` retains strongly typed replacement arguments.
@@ -298,7 +326,7 @@ without double-scaling its `WidgetSpan` triggers.
 ### Correct registry and widget isolation
 
 Parsed definitions are now isolated to the registry that supplied them. Code
-should not rely on definitions parsed by one `AcronymRegistry` appearing in a
+should not rely on definitions parsed by one `DashronymRegistry` appearing in a
 widget that uses another registry; that behavior was a cache bug.
 
 No source migration is expected. If tests accidentally depended on leaked
@@ -311,7 +339,8 @@ replacement tooltip.
 ## 0.0.9 to 0.0.10
 
 Version 0.0.10 narrowed the supported public API. The supported entry points
-are:
+at that release were listed below. When migrating directly to 0.1.0, apply the
+type renames from the table above as well.
 
 - `DashronymText`
 - `Text.dashronyms()`

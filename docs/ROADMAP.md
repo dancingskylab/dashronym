@@ -37,9 +37,9 @@ exits only when all of its quality gates pass.
 - [x] Remove known dartdoc warnings and stale documentation claims.
 - [x] Establish contributing, security, migration, and release processes.
 - [x] Connect Dart/Flutter MCP runtime and inspector tools where supported.
-- [x] Add immutable `AcronymEntry` and `DashronymGlossary` models.
+- [x] Add immutable `DashronymEntry` and `DashronymGlossary` models.
 - [x] Add aliases, provenance, metadata, and atomic duplicate policies while
-      keeping `AcronymRegistry(Map<String, String>)`.
+      keeping `DashronymRegistry(Map<String, String>)`.
 - [x] Publish a strict version-1
       [glossary JSON Schema](../schema/v1/dashronym-glossary.schema.json) with
       deterministic serialization.

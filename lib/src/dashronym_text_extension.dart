@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 
-import 'config.dart';
+import 'dashronym_config.dart';
 import 'dashronym_text.dart';
 import 'dashronym_scope.dart';
-import 'registry.dart';
+import 'dashronym_registry.dart';
 import 'dashronym_theme.dart';
-import 'acronym_inline.dart';
+import 'dashronym_inline.dart';
 
 /// Convenience APIs for turning a plain [Text] into a glossary-aware widget.
 ///
 /// Use this extension when you already have a [Text] widget and want to add
 /// inline glossary tooltips without restructuring your tree. For new widgets,
 /// you can also use [DashronymText] directly.
-extension DashronymsTextX on Text {
+extension DashronymTextExtension on Text {
   /// Returns a [DashronymText] that decorates matches with glossary tooltips.
   ///
   /// Plain text and nested `Text.rich` span trees are both processed. Existing
@@ -23,7 +23,7 @@ extension DashronymsTextX on Text {
   /// [registry], [config], [theme], and [tooltipBuilder] may be inherited from
   /// [DashronymScope]. Explicit values take precedence.
   Widget dashronyms({
-    AcronymRegistry? registry,
+    DashronymRegistry? registry,
     DashronymConfig? config,
     DashronymTheme? theme,
     DashronymTooltipBuilder? tooltipBuilder,

@@ -2,9 +2,9 @@ import 'package:dashronym/dashronym_core.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  group('AcronymEntry', () {
+  group('DashronymEntry', () {
     test('stores rich fields and exposes a tooltip-compatible description', () {
-      final entry = AcronymEntry(
+      final entry = DashronymEntry(
         acronym: 'API',
         expansion: 'Application Programming Interface',
         definition: 'A contract used by software components.',
@@ -27,7 +27,7 @@ void main() {
     });
 
     test('uses the expansion as the simple display description', () {
-      final entry = AcronymEntry(
+      final entry = DashronymEntry(
         acronym: 'SDK',
         expansion: 'Software Development Kit',
       );
@@ -46,7 +46,7 @@ void main() {
         'a': true,
       };
 
-      final entry = AcronymEntry(
+      final entry = DashronymEntry(
         acronym: 'API',
         expansion: 'Application Programming Interface',
         aliases: aliases,
@@ -82,7 +82,7 @@ void main() {
     });
 
     test('round-trips deterministic JSON with value equality', () {
-      final entry = AcronymEntry(
+      final entry = DashronymEntry(
         acronym: 'API',
         expansion: 'Application Programming Interface',
         definition: 'A software contract.',
@@ -98,7 +98,7 @@ void main() {
         },
       );
 
-      final decoded = AcronymEntry.fromJson(entry.toJson());
+      final decoded = DashronymEntry.fromJson(entry.toJson());
 
       expect(decoded, entry);
       expect(decoded.hashCode, entry.hashCode);
@@ -115,7 +115,7 @@ void main() {
     });
 
     test('decodes omitted optional collections as immutable empty values', () {
-      final entry = AcronymEntry.fromJson({
+      final entry = DashronymEntry.fromJson({
         'acronym': 'SDK',
         'expansion': 'Software Development Kit',
       });
@@ -127,7 +127,7 @@ void main() {
     });
 
     test('copyWith replaces and explicitly clears optional fields', () {
-      final original = AcronymEntry(
+      final original = DashronymEntry(
         acronym: 'API',
         expansion: 'Original expansion',
         definition: 'Original definition',
@@ -157,19 +157,19 @@ void main() {
 
     test('rejects blank, padded, duplicate, and redundant fields', () {
       expect(
-        () => AcronymEntry(acronym: '', expansion: 'Expansion'),
+        () => DashronymEntry(acronym: '', expansion: 'Expansion'),
         throwsArgumentError,
       );
       expect(
-        () => AcronymEntry(acronym: ' API', expansion: 'Expansion'),
+        () => DashronymEntry(acronym: ' API', expansion: 'Expansion'),
         throwsArgumentError,
       );
       expect(
-        () => AcronymEntry(acronym: 'API', expansion: ' '),
+        () => DashronymEntry(acronym: 'API', expansion: ' '),
         throwsArgumentError,
       );
       expect(
-        () => AcronymEntry(
+        () => DashronymEntry(
           acronym: 'API',
           expansion: 'Expansion',
           aliases: const ['API'],
@@ -177,7 +177,7 @@ void main() {
         throwsArgumentError,
       );
       expect(
-        () => AcronymEntry(
+        () => DashronymEntry(
           acronym: 'API',
           expansion: 'Expansion',
           aliases: const ['Web API', 'Web API'],
@@ -185,7 +185,7 @@ void main() {
         throwsArgumentError,
       );
       expect(
-        () => AcronymEntry(
+        () => DashronymEntry(
           acronym: 'API',
           expansion: 'Expansion',
           tags: const ['software', 'software'],
@@ -193,7 +193,7 @@ void main() {
         throwsArgumentError,
       );
       expect(
-        () => AcronymEntry(
+        () => DashronymEntry(
           acronym: 'API',
           expansion: 'Expansion',
           definition: '',
@@ -218,7 +218,7 @@ void main() {
           cyclic,
         ]) {
           expect(
-            () => AcronymEntry(
+            () => DashronymEntry(
               acronym: 'API',
               expansion: 'Expansion',
               metadata: metadata,
@@ -231,7 +231,7 @@ void main() {
 
     test('strict JSON decoder reports paths and rejects unknown fields', () {
       expect(
-        () => AcronymEntry.fromJson({
+        () => DashronymEntry.fromJson({
           'acronym': 'API',
           'expansion': 'Expansion',
           'typo': true,
@@ -245,7 +245,7 @@ void main() {
         ),
       );
       expect(
-        () => AcronymEntry.fromJson({
+        () => DashronymEntry.fromJson({
           'acronym': 'API',
           'expansion': 'Expansion',
           'aliases': [1],
@@ -259,7 +259,7 @@ void main() {
         ),
       );
       expect(
-        () => AcronymEntry.fromJson({'acronym': 'API'}),
+        () => DashronymEntry.fromJson({'acronym': 'API'}),
         throwsA(
           isA<FormatException>().having(
             (error) => error.message,

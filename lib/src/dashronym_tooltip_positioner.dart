@@ -8,9 +8,9 @@ import 'dashronym_theme.dart';
 ///
 /// This helper centralizes the geometry calculations that keep the tooltip
 /// within the visible viewport. It accounts for safe areas, keyboard insets,
-/// and text direction so `_AcronymInlineState` can focus on interactions.
-class AcronymTooltipPositioner {
-  const AcronymTooltipPositioner._(); // coverage:ignore-line
+/// and text direction so `_DashronymInlineState` can focus on interactions.
+class DashronymTooltipPositioner {
+  const DashronymTooltipPositioner._(); // coverage:ignore-line
 
   /// Returns the baseline follower offset relative to the anchor before any
   /// viewport clamping is applied.

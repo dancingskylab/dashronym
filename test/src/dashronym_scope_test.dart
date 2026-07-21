@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   testWidgets('DashronymScope exposes shared defaults', (tester) async {
-    final registry = AcronymRegistry({
+    final registry = DashronymRegistry({
       'API': 'Application Programming Interface',
     });
     const config = DashronymConfig(enableBareAcronyms: true);

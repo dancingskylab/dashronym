@@ -1,8 +1,8 @@
 import 'dart:ui' show PointerDeviceKind, Tristate;
 
 import 'package:dashronym/dashronym.dart';
-import 'package:dashronym/src/acronym_inline.dart';
-import 'package:dashronym/src/tooltip_card.dart';
+import 'package:dashronym/src/dashronym_inline.dart';
+import 'package:dashronym/src/dashronym_tooltip_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -24,7 +24,7 @@ Widget _testHarness(Widget child) {
 DashronymTheme _theme() => const DashronymTheme(enableHover: false);
 
 void main() {
-  testWidgets('AcronymInline toggles tooltip via pointer and keyboard', (
+  testWidgets('DashronymInline toggles tooltip via pointer and keyboard', (
     tester,
   ) async {
     final semantics = tester.ensureSemantics();
@@ -32,7 +32,7 @@ void main() {
     await tester.pumpWidget(
       _testHarness(
         FocusTraversalGroup(
-          child: AcronymInline(
+          child: DashronymInline(
             acronym: 'SDK',
             description: 'Software Development Kit',
             theme: _theme(),
@@ -109,7 +109,7 @@ void main() {
 
     await tester.pumpWidget(
       _testHarness(
-        AcronymInline(
+        DashronymInline(
           acronym: 'CLI',
           description: 'Command Line Interface',
           theme: _theme(),
@@ -140,7 +140,7 @@ void main() {
   ) async {
     await tester.pumpWidget(
       _testHarness(
-        const AcronymInline(
+        const DashronymInline(
           acronym: 'CLI',
           description: 'Command Line Interface',
           theme: DashronymTheme(
@@ -173,7 +173,7 @@ void main() {
 
     await tester.pumpWidget(
       _testHarness(
-        AcronymInline(
+        DashronymInline(
           acronym: 'UI',
           description: 'User Interface',
           theme: hoverTheme,
@@ -208,7 +208,7 @@ void main() {
 
     await tester.pumpWidget(
       _testHarness(
-        const AcronymInline(
+        const DashronymInline(
           acronym: 'A11Y',
           description: 'Accessibility',
           theme: hoverTheme,
@@ -240,7 +240,7 @@ void main() {
   testWidgets('pointer-open tooltip dismisses with Escape', (tester) async {
     await tester.pumpWidget(
       _testHarness(
-        AcronymInline(
+        DashronymInline(
           key: const ValueKey('trigger'),
           acronym: 'API',
           description: 'Application Programming Interface',
@@ -259,7 +259,7 @@ void main() {
     expect(find.byType(DashronymTooltipCard), findsNothing);
   });
 
-  testWidgets('direct AcronymInline honors ambient text scaling', (
+  testWidgets('direct DashronymInline honors ambient text scaling', (
     tester,
   ) async {
     const style = TextStyle(fontSize: 20, height: 1);
@@ -273,7 +273,7 @@ void main() {
             textBaseline: TextBaseline.alphabetic,
             children: [
               Text('SDK', key: ValueKey('scaling-reference'), style: style),
-              AcronymInline(
+              DashronymInline(
                 key: ValueKey('direct-inline'),
                 acronym: 'SDK',
                 description: 'Software Development Kit',
@@ -306,7 +306,7 @@ void main() {
     await tester.pumpWidget(
       _testHarness(
         FocusTraversalGroup(
-          child: AcronymInline(
+          child: DashronymInline(
             acronym: 'SDK',
             description: 'Software Development Kit',
             theme: _theme(),
@@ -343,7 +343,7 @@ void main() {
   ) async {
     await tester.pumpWidget(
       _testHarness(
-        const AcronymInline(
+        const DashronymInline(
           acronym: 'SDK',
           description: 'Software Development Kit',
           theme: DashronymTheme(
@@ -392,7 +392,7 @@ void main() {
       _testHarness(
         const MediaQuery(
           data: MediaQueryData(supportsAnnounce: true),
-          child: AcronymInline(
+          child: DashronymInline(
             acronym: 'API',
             description: 'Application Programming Interface',
             theme: DashronymTheme(enableHover: false),
@@ -424,7 +424,7 @@ void main() {
       _testHarness(
         const MediaQuery(
           data: MediaQueryData(supportsAnnounce: false),
-          child: AcronymInline(
+          child: DashronymInline(
             key: ValueKey('unsupported-announcements'),
             acronym: 'SDK',
             description: 'Software Development Kit',
@@ -480,7 +480,7 @@ void main() {
                       primary: currentColor,
                     ),
                   ),
-                  child: AcronymInline(
+                  child: DashronymInline(
                     acronym: 'API',
                     description: currentDescription,
                     theme: _theme().copyWith(
@@ -556,7 +556,7 @@ void main() {
             viewInsets: EdgeInsets.only(bottom: 100),
             textScaler: TextScaler.linear(3),
           ),
-          child: AcronymInline(
+          child: DashronymInline(
             acronym: 'A11Y',
             description: description,
             theme: _theme(),
@@ -588,14 +588,14 @@ void main() {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              AcronymInline(
+              DashronymInline(
                 acronym: 'SDK',
                 description: 'Software Development Kit',
                 theme: _theme(),
                 textStyle: const TextStyle(),
               ),
               const SizedBox(height: 12),
-              AcronymInline(
+              DashronymInline(
                 acronym: 'API',
                 description: 'Application Programming Interface',
                 theme: _theme(),
@@ -617,21 +617,21 @@ void main() {
     expect(find.text('Application Programming Interface'), findsOneWidget);
   });
 
-  testWidgets('AcronymInline uses custom tooltipBuilder when provided', (
+  testWidgets('DashronymInline uses custom tooltipBuilder when provided', (
     tester,
   ) async {
     final tooltipKey = GlobalKey();
-    final entry = AcronymEntry(
+    final entry = DashronymEntry(
       acronym: 'API',
       expansion: 'Application Programming Interface',
       definition: 'A contract for software integration.',
       tags: const ['software'],
     );
-    AcronymEntry? receivedEntry;
+    DashronymEntry? receivedEntry;
 
     await tester.pumpWidget(
       _testHarness(
-        AcronymInline(
+        DashronymInline(
           acronym: 'API',
           description: 'Application Programming Interface',
           theme: _theme(),
@@ -667,7 +667,7 @@ void main() {
     expect(find.byKey(tooltipKey), findsNothing);
   });
 
-  testWidgets('AcronymInline reacts to updates, metrics changes, and scrolls', (
+  testWidgets('DashronymInline reacts to updates, metrics changes, and scrolls', (
     tester,
   ) async {
     final themeNotifier = ValueNotifier(
@@ -691,7 +691,7 @@ void main() {
             return ValueListenableBuilder<DashronymTheme>(
               valueListenable: themeNotifier,
               builder: (context, theme, _) {
-                final inline = AcronymInline(
+                final inline = DashronymInline(
                   key: const ValueKey('inline'),
                   acronym: 'SDK',
                   description: 'Software Development Kit',
@@ -769,7 +769,7 @@ void main() {
     expect(find.byType(DashronymTooltipCard), findsNothing);
   });
 
-  testWidgets('AcronymInline hides tooltip on orientation change', (
+  testWidgets('DashronymInline hides tooltip on orientation change', (
     tester,
   ) async {
     final binding = tester.binding;
@@ -783,7 +783,7 @@ void main() {
 
     await tester.pumpWidget(
       _testHarness(
-        AcronymInline(
+        DashronymInline(
           acronym: 'SDK',
           description: 'Software Development Kit',
           theme: _theme(),
@@ -816,7 +816,7 @@ void main() {
             child: Column(
               children: [
                 const SizedBox(height: 16),
-                AcronymInline(
+                DashronymInline(
                   acronym: 'SDK',
                   description: 'Software Development Kit',
                   theme: _theme(),

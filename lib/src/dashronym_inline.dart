@@ -2,8 +2,8 @@
 ///
 /// This file defines:
 ///
-/// * [AcronymInline] — an inline, accessible trigger that shows a tooltip for a term.
-/// * [AcronymTooltipDetails] — the metadata passed to a custom [DashronymTooltipBuilder].
+/// * [DashronymInline] — an inline, accessible trigger that shows a tooltip for a term.
+/// * [DashronymTooltipDetails] — the metadata passed to a custom [DashronymTooltipBuilder].
 /// * [DashronymTooltipBuilder] — a typedef for building a custom tooltip widget.
 ///
 /// ### Sizing behavior at a glance
@@ -19,7 +19,7 @@
 ///   spacing: 4,
 ///   children: [
 ///     const Text('Install the'),
-///     AcronymInline(
+///     DashronymInline(
 ///       acronym: 'SDK',
 ///       description: 'Software Development Kit',
 ///       theme: myDashronymTheme,
@@ -38,16 +38,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 
-import 'acronym_entry.dart';
+import 'dashronym_entry.dart';
 import 'dashronym_localizations.dart';
 import 'dashronym_theme.dart';
-import 'tooltip_card.dart';
-import 'tooltip_positioner.dart';
-import 'tooltip_constraints.dart';
+import 'dashronym_tooltip_card.dart';
+import 'dashronym_tooltip_positioner.dart';
+import 'dashronym_tooltip_constraints.dart';
 
 /// Signature used to build custom tooltip content for `DashronymText`.
 ///
-/// The function receives the current [BuildContext] and an [AcronymTooltipDetails]
+/// The function receives the current [BuildContext] and a [DashronymTooltipDetails]
 /// object describing the selected term. Return any widget you want to display as the
 /// tooltip body (e.g. a custom card, sheet, etc.).
 ///
@@ -55,7 +55,7 @@ import 'tooltip_constraints.dart';
 /// ```dart
 /// DashronymText(
 ///   'The (CI) build passed.',
-///   registry: AcronymRegistry({
+///   registry: DashronymRegistry({
 ///     'CI': 'Continuous Integration',
 ///   }),
 ///   tooltipBuilder: (context, details) {
@@ -80,12 +80,12 @@ import 'tooltip_constraints.dart';
 /// );
 /// ```
 typedef DashronymTooltipBuilder =
-    Widget Function(BuildContext context, AcronymTooltipDetails details);
+    Widget Function(BuildContext context, DashronymTooltipDetails details);
 
 /// Data surfaced to [DashronymTooltipBuilder] implementations.
-class AcronymTooltipDetails {
+class DashronymTooltipDetails {
   /// Creates tooltip metadata provided to custom tooltip builders.
-  const AcronymTooltipDetails({
+  const DashronymTooltipDetails({
     required this.acronym,
     required this.description,
     required this.theme,
@@ -107,9 +107,9 @@ class AcronymTooltipDetails {
 
   /// Rich glossary metadata for [acronym], when available.
   ///
-  /// Legacy registries with values that cannot form a valid [AcronymEntry]
+  /// Legacy registries with values that cannot form a valid [DashronymEntry]
   /// leave this `null`.
-  final AcronymEntry? entry;
+  final DashronymEntry? entry;
 }
 
 /// An inline, tappable acronym that shows an accessible tooltip card.
@@ -137,7 +137,7 @@ class AcronymTooltipDetails {
 ///       WidgetSpan(
 ///         alignment: PlaceholderAlignment.baseline,
 ///         baseline: TextBaseline.alphabetic,
-///         child: AcronymInline(
+///         child: DashronymInline(
 ///           acronym: 'SDK',
 ///           description: 'Software Development Kit',
 ///           theme: myDashronymTheme,
@@ -160,9 +160,9 @@ class AcronymTooltipDetails {
 /// [CompositedTransformFollower] pair. The portal preserves trigger-local
 /// inherited widgets and owns the tooltip lifecycle so the surface cannot
 /// outlive its inline trigger.
-class AcronymInline extends StatefulWidget {
+class DashronymInline extends StatefulWidget {
   /// Creates an inline acronym control that shows a tooltip when activated.
-  const AcronymInline({
+  const DashronymInline({
     super.key,
     required this.acronym,
     required this.description,
@@ -198,7 +198,7 @@ class AcronymInline extends StatefulWidget {
   /// Overrides scaling for the inline trigger text.
   ///
   /// This is primarily used by Dashronym's [WidgetSpan] adapter, because
-  /// Flutter scales inline widgets automatically. Direct [AcronymInline]
+  /// Flutter scales inline widgets automatically. Direct [DashronymInline]
   /// instances should normally leave this `null` to honor the ambient
   /// [MediaQuery] text scaler.
   @internal
@@ -206,7 +206,7 @@ class AcronymInline extends StatefulWidget {
 
   /// Rich glossary metadata associated with [acronym], when available.
   @internal
-  final AcronymEntry? entry;
+  final DashronymEntry? entry;
 
   /// Locale inherited from the authored source span, when present.
   @internal
@@ -225,12 +225,12 @@ class AcronymInline extends StatefulWidget {
   ///
   /// You typically do not need to call this.
   @override
-  State<AcronymInline> createState() => _AcronymInlineState();
+  State<DashronymInline> createState() => _DashronymInlineState();
 }
 
-class _AcronymInlineState extends State<AcronymInline>
+class _DashronymInlineState extends State<DashronymInline>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
-  static _AcronymInlineState? _activeTooltip;
+  static _DashronymInlineState? _activeTooltip;
 
   final LayerLink _link = LayerLink();
   final FocusNode _focusNode = FocusNode(debugLabel: 'DashronymInline');
@@ -309,7 +309,7 @@ class _AcronymInlineState extends State<AcronymInline>
   }
 
   @override
-  void didUpdateWidget(covariant AcronymInline oldWidget) {
+  void didUpdateWidget(covariant DashronymInline oldWidget) {
     super.didUpdateWidget(oldWidget);
     _hoverHideDelay =
         widget.theme.hoverHideDelay ?? widget.theme.hoverShowDelay;
@@ -468,7 +468,7 @@ class _AcronymInlineState extends State<AcronymInline>
     final direction = Directionality.of(context);
     final strings = DashronymLocalizations.of(context);
     _setFollowerOffset(
-      AcronymTooltipPositioner.baseFollowerOffset(
+      DashronymTooltipPositioner.baseFollowerOffset(
         anchorSize: targetSize,
         theme: widget.theme,
         direction: direction,
@@ -596,7 +596,7 @@ class _AcronymInlineState extends State<AcronymInline>
 
   Widget _buildOverlay(BuildContext context) {
     _postFrameIfVisible(_updateTooltipPosition);
-    final tooltipDetails = AcronymTooltipDetails(
+    final tooltipDetails = DashronymTooltipDetails(
       acronym: widget.acronym,
       description: widget.description,
       theme: widget.theme,
@@ -733,7 +733,7 @@ class _AcronymInlineState extends State<AcronymInline>
     final rawKeyboardInset = mediaQuery?.viewInsets.bottom ?? 0.0;
     final keyboardInset = rawKeyboardInset < 0.0 ? 0.0 : rawKeyboardInset;
 
-    final newOffset = AcronymTooltipPositioner.resolveFollowerOffset(
+    final newOffset = DashronymTooltipPositioner.resolveFollowerOffset(
       overlaySize: overlaySize,
       anchorTopLeft: anchorTopLeft,
       anchorSize: anchorSize,
@@ -913,7 +913,7 @@ class _TooltipViewportClamp extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, parentConstraints) {
         final mqForBuilder = mediaQuery ?? MediaQuery.maybeOf(context);
-        final resolvedConstraints = TooltipConstraintsResolver.resolve(
+        final resolvedConstraints = DashronymTooltipConstraints.resolve(
           constraints: parentConstraints,
           mediaQuery: mqForBuilder,
           theme: theme,
@@ -931,7 +931,7 @@ class _TooltipViewportClamp extends StatelessWidget {
         final constrainedChild = makeScrollable
             ? SingleChildScrollView(primary: false, child: child)
             : child;
-        return TooltipConstraintScope(
+        return DashronymTooltipConstraintScope(
           constraints: appliedConstraints,
           child: ConstrainedBox(
             constraints: appliedConstraints,

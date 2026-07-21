@@ -1,5 +1,5 @@
 import 'package:dashronym/dashronym.dart';
-import 'package:dashronym/src/acronym_inline.dart';
+import 'package:dashronym/src/dashronym_inline.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -9,7 +9,7 @@ void main() {
   ) async {
     final widget = DashronymText(
       'Our (SDK) is stable.',
-      registry: AcronymRegistry({'SDK': 'Software Development Kit'}),
+      registry: DashronymRegistry({'SDK': 'Software Development Kit'}),
       config: const DashronymConfig(),
       theme: const DashronymTheme(),
       textScaler: const TextScaler.linear(1.5),
@@ -28,7 +28,7 @@ void main() {
     'DashronymText merges inherited style and honors semanticsLabel',
     (tester) async {
       final semantics = tester.ensureSemantics();
-      final registry = AcronymRegistry({'SDK': 'Software Development Kit'});
+      final registry = DashronymRegistry({'SDK': 'Software Development Kit'});
 
       await tester.pumpWidget(
         MaterialApp(
@@ -74,7 +74,7 @@ void main() {
         home: Scaffold(
           body: DashronymText(
             'SDK docs',
-            registry: AcronymRegistry({'SDK': 'Software Development Kit'}),
+            registry: DashronymRegistry({'SDK': 'Software Development Kit'}),
             style: const TextStyle(inherit: false, fontSize: 18),
             config: const DashronymConfig(),
             theme: const DashronymTheme(),
@@ -111,7 +111,7 @@ void main() {
                     const Text('SDK', key: referenceKey, style: style),
                     DashronymText(
                       'SDK',
-                      registry: AcronymRegistry({
+                      registry: DashronymRegistry({
                         'SDK': 'Software Development Kit',
                       }),
                       config: const DashronymConfig(
@@ -151,7 +151,7 @@ void main() {
         );
     final mainRichTextFinder = find.byWidget(mainRichText);
     final triggerTextFinder = find.descendant(
-      of: find.byType(AcronymInline),
+      of: find.byType(DashronymInline),
       matching: find.text('SDK'),
     );
 
@@ -200,7 +200,7 @@ void main() {
             child: Scaffold(
               body: DashronymText(
                 'Our SDK',
-                registry: AcronymRegistry({
+                registry: DashronymRegistry({
                   'SDK': 'Software Development Kit',
                 }),
                 config: const DashronymConfig(enableBareAcronyms: true),
@@ -242,7 +242,7 @@ void main() {
         home: SelectionArea(
           child: DashronymText(
             'Our SDK is selectable.',
-            registry: AcronymRegistry({
+            registry: DashronymRegistry({
               'SDK': 'Software Development Kit',
             }),
             config: const DashronymConfig(enableBareAcronyms: true),
@@ -263,10 +263,10 @@ void main() {
   testWidgets(
     'explicit values override scope and theme extension fallbacks',
     (tester) async {
-      final scopeRegistry = AcronymRegistry({
+      final scopeRegistry = DashronymRegistry({
         'API': 'Scope definition',
       });
-      final explicitRegistry = AcronymRegistry({
+      final explicitRegistry = DashronymRegistry({
         'API': 'Explicit definition',
       });
       const extensionTheme = DashronymTheme(
@@ -340,11 +340,11 @@ void main() {
         ),
       );
 
-      AcronymInline inlineFor(Key key) {
-        return tester.widget<AcronymInline>(
+      DashronymInline inlineFor(Key key) {
+        return tester.widget<DashronymInline>(
           find.descendant(
             of: find.byKey(key),
-            matching: find.byType(AcronymInline),
+            matching: find.byType(DashronymInline),
           ),
         );
       }
@@ -372,7 +372,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(const ValueKey('explicit-config-text')),
-          matching: find.byType(AcronymInline),
+          matching: find.byType(DashronymInline),
         ),
         findsNothing,
       );
@@ -412,7 +412,7 @@ void main() {
     expect(error, isA<FlutterError>());
     expect(
       error.toString(),
-      contains('DashronymText requires an AcronymRegistry'),
+      contains('DashronymText requires a DashronymRegistry'),
     );
     expect(error.toString(), contains('DashronymScope'));
   });

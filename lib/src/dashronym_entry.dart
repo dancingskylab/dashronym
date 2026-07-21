@@ -1,14 +1,14 @@
 import 'json_value.dart';
 
 /// An immutable, portable glossary entry for an acronym or abbreviated term.
-final class AcronymEntry {
+final class DashronymEntry {
   /// Creates a validated entry.
   ///
   /// All strings must be non-empty and free of leading or trailing whitespace.
   /// [aliases] and [tags] must not contain exact duplicates. [metadata] is
   /// defensively copied, deeply frozen, and restricted to JSON-compatible
   /// values.
-  factory AcronymEntry({
+  factory DashronymEntry({
     required String acronym,
     required String expansion,
     String? definition,
@@ -28,7 +28,7 @@ final class AcronymEntry {
     final validatedTags = _stringList(tags, 'tags');
     final validatedSource = _optionalText(source, 'source');
 
-    return AcronymEntry._(
+    return DashronymEntry._(
       acronym: validatedAcronym,
       expansion: validatedExpansion,
       definition: validatedDefinition,
@@ -39,7 +39,7 @@ final class AcronymEntry {
     );
   }
 
-  const AcronymEntry._({
+  const DashronymEntry._({
     required this.acronym,
     required this.expansion,
     required this.definition,
@@ -53,7 +53,7 @@ final class AcronymEntry {
   ///
   /// [path] is included in failures when decoding an entry nested inside a
   /// larger document.
-  factory AcronymEntry.fromJson(Object? json, {String path = r'$'}) {
+  factory DashronymEntry.fromJson(Object? json, {String path = r'$'}) {
     final reader = JsonObjectReader.from(json, path: path)
       ..rejectUnknownKeys(const {
         'acronym',
@@ -69,7 +69,7 @@ final class AcronymEntry {
     final tags = _decodeStringArray(reader, 'tags');
 
     try {
-      return AcronymEntry(
+      return DashronymEntry(
         acronym: reader.requiredString('acronym'),
         expansion: reader.requiredString('expansion'),
         definition: reader.optionalString('definition'),
@@ -128,7 +128,7 @@ final class AcronymEntry {
   ///
   /// Set [clearDefinition] or [clearSource] to remove those optional values.
   /// Supplying a value and its matching clear flag together is invalid.
-  AcronymEntry copyWith({
+  DashronymEntry copyWith({
     String? acronym,
     String? expansion,
     String? definition,
@@ -148,7 +148,7 @@ final class AcronymEntry {
       throw ArgumentError('source and clearSource cannot both be supplied');
     }
 
-    return AcronymEntry(
+    return DashronymEntry(
       acronym: acronym ?? this.acronym,
       expansion: expansion ?? this.expansion,
       definition: clearDefinition ? null : definition ?? this.definition,
@@ -161,7 +161,7 @@ final class AcronymEntry {
 
   @override
   bool operator ==(Object other) =>
-      other is AcronymEntry &&
+      other is DashronymEntry &&
       other.acronym == acronym &&
       other.expansion == expansion &&
       other.definition == definition &&
@@ -182,7 +182,7 @@ final class AcronymEntry {
   );
 
   @override
-  String toString() => 'AcronymEntry($acronym: $expansion)';
+  String toString() => 'DashronymEntry($acronym: $expansion)';
 }
 
 List<String> _decodeStringArray(JsonObjectReader reader, String key) {

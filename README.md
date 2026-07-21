@@ -18,7 +18,7 @@ network connection, telemetry, or a hosted Dashronym service.
 - Keep nested `TextSpan` styling, locale metadata, existing `WidgetSpan`s,
   layout options, selection, directionality, text scaling, and recognizers on
   unmatched text; matched terms intentionally become glossary controls.
-- Use immutable `AcronymEntry` values with expansions, longer definitions,
+- Use immutable `DashronymEntry` values with expansions, longer definitions,
   aliases, tags, sources, and JSON-safe metadata.
 - Import and export deterministic, versioned `DashronymGlossary` JSON.
 - Resolve alias collisions with explicit reject, keep-first, or keep-last
@@ -61,7 +61,7 @@ For one text widget, pass a registry directly:
 import 'package:dashronym/dashronym.dart';
 import 'package:flutter/material.dart';
 
-final registry = AcronymRegistry({
+final registry = DashronymRegistry({
   'SDK': 'Software Development Kit',
   'API': 'Application Programming Interface',
 });
@@ -125,7 +125,7 @@ Omitting a registry without a surrounding scope produces a focused
 
 ## Rich entries, aliases, and portable JSON
 
-Use `AcronymEntry` when a definition needs more structure than a single
+Use `DashronymEntry` when a definition needs more structure than a single
 description string:
 
 ```dart
@@ -136,7 +136,7 @@ final glossary = DashronymGlossary(
   locale: 'en-CA',
   license: 'LicenseRef-Example',
   entries: [
-    AcronymEntry(
+    DashronymEntry(
       acronym: 'API',
       expansion: 'Application Programming Interface',
       definition: 'A defined interface used by software components.',
@@ -210,9 +210,9 @@ resolve an `API` entry. Pass `caseInsensitive: false` when case is meaningful.
 Rich registries reject normalized canonical or alias collisions by default:
 
 ```dart
-final registry = AcronymRegistry.fromAcronymEntries(
+final registry = DashronymRegistry.fromEntries(
   glossary.entries,
-  duplicatePolicy: AcronymDuplicatePolicy.reject,
+  duplicatePolicy: DashronymDuplicatePolicy.reject,
 );
 ```
 
@@ -378,7 +378,7 @@ When a visual change is intentional, inspect and regenerate the inline goldens
 with:
 
 ```sh
-flutter test --update-goldens test/src/acronym_inline_golden_test.dart
+flutter test --update-goldens test/src/dashronym_inline_golden_test.dart
 ```
 
 Dashronym is available under the [BSD 3-Clause License](LICENSE).

@@ -6,7 +6,7 @@ upgrade examples and behavior changes.
 
 ### Added
 
-- Added immutable `AcronymEntry` and `DashronymGlossary` models with aliases,
+- Added immutable `DashronymEntry` and `DashronymGlossary` models with aliases,
   tags, provenance fields, deeply immutable JSON metadata, deterministic
   serialization, value equality, clear-safe `copyWith`, and direct
   glossary-to-registry conversion.
@@ -15,7 +15,7 @@ upgrade examples and behavior changes.
 - Added the Flutter-import-free `dashronym_core.dart` entry point for domain
   code running within Flutter-SDK projects.
 - Added rich registry construction, canonical and alias lookup,
-  `AcronymDuplicatePolicy`, and rich-entry access from custom tooltip details.
+  `DashronymDuplicatePolicy`, and rich-entry access from custom tooltip details.
 - Added `DashronymScope` for shared registry, matching, theme, and tooltip
   defaults.
 - Made `DashronymTheme` a Flutter `ThemeExtension` with animated interpolation
@@ -24,10 +24,17 @@ upgrade examples and behavior changes.
   support while preserving authored span metadata and existing widget spans.
 - Added a minimum/latest Flutter CI matrix, coverage gates, warning-free
   dartdoc and publication checks, plus contributing, security, migration,
-  release, roadmap, and product-strategy documentation.
+  release, and roadmap documentation.
 
 ### Changed
 
+- Standardized package-owned public types and source filenames on the
+  `Dashronym` name. This includes `DashronymEntry`, `DashronymRegistry`,
+  `DashronymDuplicatePolicy`, and `DashronymTooltipDetails`; see
+  `MIGRATION.md` for the complete rename table.
+- Clarified registry factories: `DashronymRegistry.fromEntries` accepts rich
+  `DashronymEntry` values, while `fromMapEntries` accepts legacy
+  `MapEntry<String, String>` values.
 - Raised the supported SDK floor to Dart 3.10 and Flutter 3.38.1 so the package
   constraints match the APIs used by the implementation.
 - Made `DashronymText` registry, configuration, theme, and tooltip builder

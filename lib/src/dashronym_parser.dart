@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
 
-import 'acronym_inline.dart';
-import 'acronym_parser_core.dart';
-import 'acronym_tokens.dart';
-import 'config.dart';
+import 'dashronym_inline.dart';
+import 'dashronym_parser_core.dart';
+import 'dashronym_token.dart';
+import 'dashronym_config.dart';
 import 'dashronym_theme.dart';
-import 'registry.dart';
+import 'dashronym_registry.dart';
 
 /// Maps [DashronymToken]s produced by [DashronymParserCore] into [InlineSpan]s
 /// with embedded acronym tooltip widgets.
 ///
 /// This adapter is responsible for presentation concerns only – it creates
-/// [TextSpan]s for plain text and [WidgetSpan]s that wrap [AcronymInline] for
+/// [TextSpan]s for plain text and [WidgetSpan]s that wrap [DashronymInline] for
 /// matched acronyms.
 ///
 /// Example:
 /// ```dart
-/// final registry = AcronymRegistry({
+/// final registry = DashronymRegistry({
 ///   'SDK': 'Software Development Kit',
 ///   'API': 'Application Programming Interface',
 /// });
@@ -41,13 +41,13 @@ class DashronymParser {
   }) : _core = DashronymParserCore(registry: registry, config: config);
 
   /// Dictionary of acronyms and their descriptions used for matching.
-  final AcronymRegistry registry;
+  final DashronymRegistry registry;
 
   /// Parsing options such as marker pairs, minimum/maximum lengths,
   /// and whether to consider bare ALL-CAPS words.
   final DashronymConfig config;
 
-  /// Visual and interaction parameters for produced [AcronymInline] widgets.
+  /// Visual and interaction parameters for produced [DashronymInline] widgets.
   final DashronymTheme theme;
 
   /// Base [TextStyle] applied to text runs and passed to inline widgets.
@@ -61,8 +61,8 @@ class DashronymParser {
   /// Converts [input] into a sequence of [InlineSpan]s with glossary tooltips.
   ///
   /// * Delegates tokenization to [DashronymParserCore].
-  /// * Renders [TextToken]s as [TextSpan]s.
-  /// * Renders [AcronymToken]s as [WidgetSpan]s that host [AcronymInline].
+  /// * Renders [DashronymTextToken]s as [TextSpan]s.
+  /// * Renders [DashronymMatchToken]s as [WidgetSpan]s that host [DashronymInline].
   List<InlineSpan> parseToSpans(
     String input, {
     Locale? locale,
@@ -78,16 +78,16 @@ class DashronymParser {
       remainingSemanticsIdentifier = null;
       spans.add(
         switch (token) {
-          TextToken(:final text) => TextSpan(
+          DashronymTextToken(:final text) => TextSpan(
             text: text,
             locale: locale,
             spellOut: spellOut,
             semanticsIdentifier: tokenSemanticsIdentifier,
           ),
-          AcronymToken(:final acronym, :final description) => WidgetSpan(
+          DashronymMatchToken(:final acronym, :final description) => WidgetSpan(
             alignment: PlaceholderAlignment.baseline,
             baseline: TextBaseline.alphabetic,
-            child: AcronymInline(
+            child: DashronymInline(
               acronym: acronym,
               description: description,
               theme: theme,

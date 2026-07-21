@@ -2,16 +2,16 @@ import 'package:dashronym/dashronym_core.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('AcronymRegistry stores entries case-insensitively by default', () {
-    final registry = AcronymRegistry({'SDK': 'Software Development Kit'});
+  test('DashronymRegistry stores entries case-insensitively by default', () {
+    final registry = DashronymRegistry({'SDK': 'Software Development Kit'});
 
     expect(registry.contains('SDK'), isTrue);
     expect(registry.contains('sdk'), isTrue);
     expect(registry.descriptionOf('sdk'), 'Software Development Kit');
   });
 
-  test('AcronymRegistry respects case sensitivity when disabled', () {
-    final registry = AcronymRegistry({
+  test('DashronymRegistry respects case sensitivity when disabled', () {
+    final registry = DashronymRegistry({
       'API': 'Application Programming Interface',
     }, caseInsensitive: false);
 
@@ -20,9 +20,9 @@ void main() {
     expect(registry.descriptionOf('api'), isNull);
   });
 
-  test('AcronymRegistry defensively copies source entries', () {
+  test('DashronymRegistry defensively copies source entries', () {
     final entries = {'SDK': 'Software Development Kit'};
-    final registry = AcronymRegistry(entries);
+    final registry = DashronymRegistry(entries);
 
     entries['SDK'] = 'Changed';
     entries['API'] = 'Application Programming Interface';
@@ -32,7 +32,7 @@ void main() {
   });
 
   test('entries exposes an unmodifiable normalized map', () {
-    final registry = AcronymRegistry({
+    final registry = DashronymRegistry({
       'api': 'Application Programming Interface',
     });
 
@@ -46,7 +46,7 @@ void main() {
   });
 
   test('registry exposes collection-style conveniences', () {
-    final registry = AcronymRegistry.fromEntries([
+    final registry = DashronymRegistry.fromMapEntries([
       const MapEntry('SDK', 'Software Development Kit'),
       const MapEntry('API', 'Application Programming Interface'),
     ]);
@@ -55,11 +55,11 @@ void main() {
     expect(registry.isEmpty, isFalse);
     expect(registry.isNotEmpty, isTrue);
     expect(registry['api'], 'Application Programming Interface');
-    expect(AcronymRegistry.empty().isEmpty, isTrue);
+    expect(DashronymRegistry.empty().isEmpty, isTrue);
   });
 
   test('legacy registry preserves blank and whitespace string values', () {
-    final registry = AcronymRegistry({
+    final registry = DashronymRegistry({
       '': '',
       ' spaced ': ' padded description ',
     });
@@ -76,7 +76,7 @@ void main() {
   });
 
   test('legacy map keeps the later normalized key by default', () {
-    final registry = AcronymRegistry({
+    final registry = DashronymRegistry({
       'api': 'First',
       'API': 'Second',
     });
@@ -86,13 +86,13 @@ void main() {
   });
 
   test('rich entries support aliases without changing canonical length', () {
-    final entry = AcronymEntry(
+    final entry = DashronymEntry(
       acronym: 'API',
       expansion: 'Application Programming Interface',
       definition: 'A software contract.',
       aliases: const ['Web API', 'Application Interface'],
     );
-    final registry = AcronymRegistry.fromAcronymEntries([entry]);
+    final registry = DashronymRegistry.fromEntries([entry]);
 
     expect(registry.length, 1);
     expect(registry.lookupTermCount, 3);
@@ -112,17 +112,17 @@ void main() {
   });
 
   test('rich alias lookup respects case sensitivity', () {
-    final upper = AcronymEntry(
+    final upper = DashronymEntry(
       acronym: 'API',
       expansion: 'Upper',
       aliases: const ['Web API'],
     );
-    final lower = AcronymEntry(
+    final lower = DashronymEntry(
       acronym: 'api',
       expansion: 'Lower',
       aliases: const ['web api'],
     );
-    final registry = AcronymRegistry.fromAcronymEntries(
+    final registry = DashronymRegistry.fromEntries(
       [upper, lower],
       caseInsensitive: false,
     );
@@ -134,19 +134,19 @@ void main() {
   });
 
   test('rich registry rejects canonical and alias ambiguity by default', () {
-    final first = AcronymEntry(
+    final first = DashronymEntry(
       acronym: 'API',
       expansion: 'First',
       aliases: const ['Shared'],
     );
-    final second = AcronymEntry(
+    final second = DashronymEntry(
       acronym: 'SDK',
       expansion: 'Second',
       aliases: const ['shared'],
     );
 
     expect(
-      () => AcronymRegistry.fromAcronymEntries([first, second]),
+      () => DashronymRegistry.fromEntries([first, second]),
       throwsA(
         isA<ArgumentError>().having(
           (error) => error.message,
@@ -158,19 +158,19 @@ void main() {
   });
 
   test('keepFirst skips the complete later conflicting rich entry', () {
-    final first = AcronymEntry(
+    final first = DashronymEntry(
       acronym: 'API',
       expansion: 'First',
       aliases: const ['Shared'],
     );
-    final second = AcronymEntry(
+    final second = DashronymEntry(
       acronym: 'SDK',
       expansion: 'Second',
       aliases: const ['shared'],
     );
-    final registry = AcronymRegistry.fromAcronymEntries(
+    final registry = DashronymRegistry.fromEntries(
       [first, second],
-      duplicatePolicy: AcronymDuplicatePolicy.keepFirst,
+      duplicatePolicy: DashronymDuplicatePolicy.keepFirst,
     );
 
     expect(registry.entries, {'API': 'First'});
@@ -180,19 +180,19 @@ void main() {
   });
 
   test('keepLast atomically displaces complete earlier rich entries', () {
-    final first = AcronymEntry(
+    final first = DashronymEntry(
       acronym: 'API',
       expansion: 'First',
       aliases: const ['Shared'],
     );
-    final second = AcronymEntry(
+    final second = DashronymEntry(
       acronym: 'SDK',
       expansion: 'Second',
       aliases: const ['shared'],
     );
-    final registry = AcronymRegistry.fromAcronymEntries(
+    final registry = DashronymRegistry.fromEntries(
       [first, second],
-      duplicatePolicy: AcronymDuplicatePolicy.keepLast,
+      duplicatePolicy: DashronymDuplicatePolicy.keepLast,
     );
 
     expect(registry.entries, {'SDK': 'Second'});
@@ -201,28 +201,28 @@ void main() {
     expect(registry.richEntries, [second]);
   });
 
-  test('fromEntries honors duplicate policies before map collapsing', () {
+  test('fromMapEntries honors duplicate policies before map collapsing', () {
     const source = [
       MapEntry('API', 'First'),
       MapEntry('API', 'Second'),
     ];
 
     expect(
-      () => AcronymRegistry.fromEntries(
+      () => DashronymRegistry.fromMapEntries(
         source,
-        duplicatePolicy: AcronymDuplicatePolicy.reject,
+        duplicatePolicy: DashronymDuplicatePolicy.reject,
       ),
       throwsArgumentError,
     );
     expect(
-      AcronymRegistry.fromEntries(
+      DashronymRegistry.fromMapEntries(
         source,
-        duplicatePolicy: AcronymDuplicatePolicy.keepFirst,
+        duplicatePolicy: DashronymDuplicatePolicy.keepFirst,
       ).descriptionOf('API'),
       'First',
     );
     expect(
-      AcronymRegistry.fromEntries(source).descriptionOf('API'),
+      DashronymRegistry.fromMapEntries(source).descriptionOf('API'),
       'Second',
     );
   });

@@ -2,8 +2,8 @@ import 'package:dashronym/src/lru_cache.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('Lru evicts least recently used entries', () {
-    final cache = Lru<int, String>(capacity: 2);
+  test('LruCache evicts least recently used entries', () {
+    final cache = LruCache<int, String>(capacity: 2);
     cache.put(1, 'one');
     cache.put(2, 'two');
 
@@ -15,13 +15,13 @@ void main() {
     expect(cache.get(3), 'three');
   });
 
-  test('Lru returns null when key missing', () {
-    final cache = Lru<int, String>(capacity: 1);
+  test('LruCache returns null when key missing', () {
+    final cache = LruCache<int, String>(capacity: 1);
     expect(cache.get(42), isNull);
   });
 
-  test('Lru retains and promotes cached null values', () {
-    final cache = Lru<int, String?>(capacity: 2);
+  test('LruCache retains and promotes cached null values', () {
+    final cache = LruCache<int, String?>(capacity: 2);
     cache.put(1, null);
     cache.put(2, 'two');
 
@@ -36,7 +36,7 @@ void main() {
   });
 
   test('updating a key promotes it to most recently used', () {
-    final cache = Lru<int, String>(capacity: 2);
+    final cache = LruCache<int, String>(capacity: 2);
     cache.put(1, 'one');
     cache.put(2, 'two');
 
@@ -47,8 +47,8 @@ void main() {
     expect(cache.containsKey(2), isFalse);
   });
 
-  test('Lru rejects non-positive capacity in release builds', () {
-    expect(() => Lru<int, int>(capacity: 0), throwsArgumentError);
-    expect(() => Lru<int, int>(capacity: -1), throwsArgumentError);
+  test('LruCache rejects non-positive capacity in release builds', () {
+    expect(() => LruCache<int, int>(capacity: 0), throwsArgumentError);
+    expect(() => LruCache<int, int>(capacity: -1), throwsArgumentError);
   });
 }

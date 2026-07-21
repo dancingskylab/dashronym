@@ -8,27 +8,28 @@ sealed class DashronymToken {
 }
 
 /// A run of plain text that should be rendered as-is.
-final class TextToken extends DashronymToken {
+final class DashronymTextToken extends DashronymToken {
   /// Creates a text token containing [text].
-  const TextToken(this.text);
+  const DashronymTextToken(this.text);
 
   /// The literal text for this run.
   final String text;
 
   @override
-  bool operator ==(Object other) => other is TextToken && other.text == text;
+  bool operator ==(Object other) =>
+      other is DashronymTextToken && other.text == text;
 
   @override
   int get hashCode => text.hashCode;
 
   @override
-  String toString() => 'TextToken($text)';
+  String toString() => 'DashronymTextToken($text)';
 }
 
 /// A matched acronym and its description.
-final class AcronymToken extends DashronymToken {
+final class DashronymMatchToken extends DashronymToken {
   /// Creates an acronym token for [acronym] and its [description].
-  const AcronymToken({required this.acronym, required this.description});
+  const DashronymMatchToken({required this.acronym, required this.description});
 
   /// The acronym that was matched in the source text.
   final String acronym;
@@ -38,7 +39,7 @@ final class AcronymToken extends DashronymToken {
 
   @override
   bool operator ==(Object other) =>
-      other is AcronymToken &&
+      other is DashronymMatchToken &&
       other.acronym == acronym &&
       other.description == description;
 
@@ -47,5 +48,5 @@ final class AcronymToken extends DashronymToken {
 
   @override
   String toString() =>
-      'AcronymToken(acronym: $acronym, description: $description)';
+      'DashronymMatchToken(acronym: $acronym, description: $description)';
 }

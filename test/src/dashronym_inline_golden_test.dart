@@ -4,8 +4,8 @@ import 'package:dashronym/dashronym.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:dashronym/src/acronym_inline.dart';
-import 'package:dashronym/src/tooltip_constraints.dart';
+import 'package:dashronym/src/dashronym_inline.dart';
+import 'package:dashronym/src/dashronym_tooltip_constraints.dart';
 
 Future<void> _pumpInline(
   WidgetTester tester, {
@@ -37,7 +37,7 @@ Future<void> _pumpInline(
             height: height ?? surfaceSize.height,
             child: Align(
               alignment: alignment,
-              child: AcronymInline(
+              child: DashronymInline(
                 acronym: 'SDK',
                 description: 'Software Development Kit',
                 theme: theme ?? const DashronymTheme(),
@@ -54,25 +54,25 @@ Future<void> _pumpInline(
 }
 
 void main() {
-  testWidgets('AcronymInline golden - default state', (tester) async {
+  testWidgets('DashronymInline golden - default state', (tester) async {
     await _pumpInline(tester);
     await expectLater(
       find.byType(MaterialApp),
-      matchesGoldenFile('goldens/inline_default.png'),
+      matchesGoldenFile('goldens/dashronym_inline_default.png'),
     );
   });
 
-  testWidgets('AcronymInline golden - open state', (tester) async {
+  testWidgets('DashronymInline golden - open state', (tester) async {
     await _pumpInline(tester);
     await tester.tap(find.text('SDK'));
     await tester.pumpAndSettle(const Duration(milliseconds: 300));
     await expectLater(
       find.byType(MaterialApp),
-      matchesGoldenFile('goldens/inline_open.png'),
+      matchesGoldenFile('goldens/dashronym_inline_open.png'),
     );
   });
 
-  testWidgets('AcronymInline golden - hovered state', (tester) async {
+  testWidgets('DashronymInline golden - hovered state', (tester) async {
     const hoverTheme = DashronymTheme(
       enableHover: true,
       hoverShowDelay: Duration(milliseconds: 40),
@@ -89,24 +89,24 @@ void main() {
 
     await expectLater(
       find.byType(MaterialApp),
-      matchesGoldenFile('goldens/inline_hover.png'),
+      matchesGoldenFile('goldens/dashronym_inline_hover.png'),
     );
 
     await gesture.removePointer();
     await tester.pump(const Duration(milliseconds: 120));
   });
 
-  testWidgets('AcronymInline golden - RTL open state', (tester) async {
+  testWidgets('DashronymInline golden - RTL open state', (tester) async {
     await _pumpInline(tester, textDirection: TextDirection.rtl);
     await tester.tap(find.text('SDK'));
     await tester.pumpAndSettle(const Duration(milliseconds: 300));
     await expectLater(
       find.byType(MaterialApp),
-      matchesGoldenFile('goldens/inline_rtl_open.png'),
+      matchesGoldenFile('goldens/dashronym_inline_rtl_open.png'),
     );
   });
 
-  testWidgets('AcronymInline golden - flipped above trigger', (tester) async {
+  testWidgets('DashronymInline golden - flipped above trigger', (tester) async {
     await _pumpInline(
       tester,
       alignment: Alignment.bottomCenter,
@@ -117,11 +117,11 @@ void main() {
     await tester.pumpAndSettle(const Duration(milliseconds: 300));
     await expectLater(
       find.byType(MaterialApp),
-      matchesGoldenFile('goldens/inline_flipped.png'),
+      matchesGoldenFile('goldens/dashronym_inline_flipped.png'),
     );
   });
 
-  testWidgets('AcronymInline golden - landscape layout', (tester) async {
+  testWidgets('DashronymInline golden - landscape layout', (tester) async {
     await _pumpInline(
       tester,
       surfaceSize: const Size(640, 360),
@@ -132,7 +132,7 @@ void main() {
     await tester.pumpAndSettle(const Duration(milliseconds: 300));
     await expectLater(
       find.byType(MaterialApp),
-      matchesGoldenFile('goldens/inline_landscape.png'),
+      matchesGoldenFile('goldens/dashronym_inline_landscape.png'),
     );
   });
 
@@ -167,7 +167,7 @@ void main() {
       find.byKey(customTooltipKey),
     );
     final width = renderBox.size.width;
-    final maxExpectedWidth = 640 - TooltipConstraintsResolver.outerGutter * 2;
+    final maxExpectedWidth = 640 - DashronymTooltipConstraints.outerGutter * 2;
     expect(width, lessThanOrEqualTo(maxExpectedWidth));
     expect(width, closeTo(600, 0.1));
   });

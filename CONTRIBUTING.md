@@ -71,7 +71,7 @@ successfully.
 To regenerate the inline goldens after an intentional visual change:
 
 ```sh
-flutter test --update-goldens test/src/acronym_inline_golden_test.dart
+flutter test --update-goldens test/src/dashronym_inline_golden_test.dart
 git diff -- test
 ```
 

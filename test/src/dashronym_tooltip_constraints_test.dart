@@ -1,5 +1,5 @@
 import 'package:dashronym/src/dashronym_theme.dart';
-import 'package:dashronym/src/tooltip_constraints.dart';
+import 'package:dashronym/src/dashronym_tooltip_constraints.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -10,12 +10,12 @@ void main() {
     enableHover: false,
   );
 
-  group('TooltipConstraintsResolver.resolve', () {
+  group('DashronymTooltipConstraints.resolve', () {
     test('caps width using overlay and viewport gutters', () {
       const constraints = BoxConstraints(maxWidth: 640);
       const mediaQuery = MediaQueryData(size: Size(800, 600));
 
-      final resolved = TooltipConstraintsResolver.resolve(
+      final resolved = DashronymTooltipConstraints.resolve(
         constraints: constraints,
         mediaQuery: mediaQuery,
         theme: theme,
@@ -29,7 +29,7 @@ void main() {
       const constraints = BoxConstraints(maxWidth: 200);
       const mediaQuery = MediaQueryData(size: Size(210, 400));
 
-      final resolved = TooltipConstraintsResolver.resolve(
+      final resolved = DashronymTooltipConstraints.resolve(
         constraints: constraints,
         mediaQuery: mediaQuery,
         theme: theme,
@@ -44,7 +44,7 @@ void main() {
       const constraints = BoxConstraints(maxWidth: double.infinity);
       const mediaQuery = MediaQueryData(size: Size(1024, 1366));
 
-      final resolved = TooltipConstraintsResolver.resolve(
+      final resolved = DashronymTooltipConstraints.resolve(
         constraints: constraints,
         mediaQuery: mediaQuery,
         theme: theme,
@@ -59,7 +59,7 @@ void main() {
 
       const landscapeTheme = DashronymTheme(enableHover: false);
 
-      final resolved = TooltipConstraintsResolver.resolve(
+      final resolved = DashronymTooltipConstraints.resolve(
         constraints: constraints,
         mediaQuery: mediaQuery,
         theme: landscapeTheme,
@@ -74,7 +74,7 @@ void main() {
       const mediaQuery = MediaQueryData(size: Size(20, 400));
       const tightTheme = DashronymTheme(enableHover: false);
 
-      final resolved = TooltipConstraintsResolver.resolve(
+      final resolved = DashronymTooltipConstraints.resolve(
         constraints: constraints,
         mediaQuery: mediaQuery,
         theme: tightTheme,
@@ -87,7 +87,7 @@ void main() {
     test('falls back to overlay bounds when MediaQuery size is unknown', () {
       const constraints = BoxConstraints(maxWidth: 640, maxHeight: 480);
 
-      final resolved = TooltipConstraintsResolver.resolve(
+      final resolved = DashronymTooltipConstraints.resolve(
         constraints: constraints,
         mediaQuery: const MediaQueryData(),
         theme: theme,
@@ -109,7 +109,7 @@ void main() {
         viewInsets: EdgeInsets.only(bottom: 220),
       );
 
-      final resolved = TooltipConstraintsResolver.resolve(
+      final resolved = DashronymTooltipConstraints.resolve(
         constraints: constraints,
         mediaQuery: mediaQuery,
         theme: theme,
@@ -130,7 +130,7 @@ void main() {
         viewInsets: EdgeInsets.only(bottom: 300),
       );
 
-      final resolved = TooltipConstraintsResolver.resolve(
+      final resolved = DashronymTooltipConstraints.resolve(
         constraints: constraints,
         mediaQuery: mediaQuery,
         theme: theme,

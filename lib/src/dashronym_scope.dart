@@ -1,9 +1,9 @@
 import 'package:flutter/widgets.dart';
 
-import 'acronym_inline.dart';
-import 'config.dart';
+import 'dashronym_inline.dart';
+import 'dashronym_config.dart';
 import 'dashronym_theme.dart';
-import 'registry.dart';
+import 'dashronym_registry.dart';
 
 /// Provides shared Dashronym defaults to a widget subtree.
 ///
@@ -12,7 +12,7 @@ import 'registry.dart';
 ///
 /// ```dart
 /// DashronymScope(
-///   registry: AcronymRegistry({
+///   registry: DashronymRegistry({
 ///     'API': 'Application Programming Interface',
 ///   }),
 ///   config: const DashronymConfig(enableBareAcronyms: true),
@@ -34,7 +34,7 @@ class DashronymScope extends InheritedWidget {
   });
 
   /// Acronym definitions available to descendants.
-  final AcronymRegistry registry;
+  final DashronymRegistry registry;
 
   /// Default parser configuration for descendants.
   final DashronymConfig config;
@@ -67,7 +67,7 @@ class DashronymScope extends InheritedWidget {
         'a DashronymScope.',
       ),
       ErrorHint(
-        'Wrap this subtree in DashronymScope, or pass an AcronymRegistry '
+        'Wrap this subtree in DashronymScope, or pass a DashronymRegistry '
         'directly to the Dashronym widget.',
       ),
     ]);

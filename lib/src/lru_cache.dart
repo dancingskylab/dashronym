@@ -10,7 +10,7 @@
 ///
 /// Example:
 /// ```dart
-/// final cache = Lru<String, int>(capacity: 2);
+/// final cache = LruCache<String, int>(capacity: 2);
 /// cache.put('a', 1);   // cache: [a]
 /// cache.put('b', 2);   // cache: [a, b]
 /// cache.get('a');      // marks 'a' as MRU; order ~ [b, a]
@@ -25,11 +25,11 @@
 /// * When `V` is nullable, use [containsKey] to distinguish a cached `null`
 ///   from a cache miss.
 /// * Not thread-safe; synchronize externally if used across isolates.
-class Lru<K, V> {
+class LruCache<K, V> {
   /// Creates an LRU cache that can hold up to [capacity] entries.
   ///
   /// The [capacity] must be greater than zero.
-  Lru({required int capacity}) : capacity = _validatedCapacity(capacity);
+  LruCache({required int capacity}) : capacity = _validatedCapacity(capacity);
 
   /// Maximum number of entries the cache will hold.
   final int capacity;

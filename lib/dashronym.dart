@@ -2,13 +2,13 @@
 ///
 /// This library turns known acronyms into tappable, accessible tooltip cards
 /// without breaking reading flow. The primary surface is [DashronymText],
-/// which renders strings using an [AcronymRegistry], [DashronymConfig], and
+/// which renders strings using a [DashronymRegistry], [DashronymConfig], and
 /// [DashronymTheme].
 ///
 /// Quick start:
 /// ```dart
 /// // 1) Define your glossary.
-/// final registry = AcronymRegistry({
+/// final registry = DashronymRegistry({
 ///   'SDK': 'Software Development Kit',
 ///   'API': 'Application Programming Interface',
 /// });
@@ -47,8 +47,8 @@ library;
 export 'dashronym_core.dart';
 export 'src/dashronym_text.dart';
 export 'src/dashronym_scope.dart';
-export 'src/text_extension.dart';
+export 'src/dashronym_text_extension.dart';
 export 'src/dashronym_theme.dart';
 export 'src/dashronym_localizations.dart';
-export 'src/acronym_inline.dart'
-    show DashronymTooltipBuilder, AcronymTooltipDetails;
+export 'src/dashronym_inline.dart'
+    show DashronymTooltipBuilder, DashronymTooltipDetails;

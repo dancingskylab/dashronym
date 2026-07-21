@@ -7,11 +7,12 @@ import 'dashronym_theme.dart';
 /// Shared helpers for clamping tooltip content within the visible viewport.
 ///
 /// The resolver is used by both the stock Dashronym tooltip card and any custom
-/// tooltip builders supplied to `AcronymInline`. It projects the overlay, media
-/// query and theme caps into a single [BoxConstraints] so tooltip content never
-/// paints outside the window gutters or the on-screen keyboard.
-class TooltipConstraintsResolver {
-  const TooltipConstraintsResolver._(); // coverage:ignore-line
+/// tooltip builders supplied to `DashronymInline`. It projects the overlay, media
+/// query and theme caps into a single [BoxConstraints] so tooltip layout stays
+/// inside the window gutters and clear of the on-screen keyboard. Paint
+/// overflow such as Material elevation remains visible.
+class DashronymTooltipConstraints {
+  const DashronymTooltipConstraints._(); // coverage:ignore-line
 
   /// Default outer gutter applied on either horizontal edge.
   static const double outerGutter = 8.0;
@@ -134,10 +135,10 @@ class TooltipConstraintsResolver {
 ///
 /// The stock tooltip card uses this scope to avoid resolving and applying the
 /// same viewport constraints a second time when it is hosted by
-/// `AcronymInline`. Standalone cards still resolve their own constraints.
-class TooltipConstraintScope extends InheritedWidget {
+/// `DashronymInline`. Standalone cards still resolve their own constraints.
+class DashronymTooltipConstraintScope extends InheritedWidget {
   /// Creates a scope containing [constraints].
-  const TooltipConstraintScope({
+  const DashronymTooltipConstraintScope({
     super.key,
     required this.constraints,
     required super.child,
@@ -149,11 +150,11 @@ class TooltipConstraintScope extends InheritedWidget {
   /// Returns the nearest resolved constraints, if any.
   static BoxConstraints? maybeOf(BuildContext context) {
     return context
-        .dependOnInheritedWidgetOfExactType<TooltipConstraintScope>()
+        .dependOnInheritedWidgetOfExactType<DashronymTooltipConstraintScope>()
         ?.constraints;
   }
 
   @override
-  bool updateShouldNotify(TooltipConstraintScope oldWidget) =>
+  bool updateShouldNotify(DashronymTooltipConstraintScope oldWidget) =>
       constraints != oldWidget.constraints;
 }

@@ -1,8 +1,8 @@
 import 'dart:convert';
 
-import 'acronym_entry.dart';
+import 'dashronym_entry.dart';
 import 'json_value.dart';
-import 'registry.dart';
+import 'dashronym_registry.dart';
 
 /// An immutable, versioned Dashronym glossary interchange document.
 final class DashronymGlossary {
@@ -15,7 +15,7 @@ final class DashronymGlossary {
   /// Creates a validated version-1 glossary.
   factory DashronymGlossary({
     required String name,
-    Iterable<AcronymEntry> entries = const [],
+    Iterable<DashronymEntry> entries = const [],
     String? id,
     String? version,
     String? locale,
@@ -25,7 +25,7 @@ final class DashronymGlossary {
     Map<String, Object?> metadata = const {},
   }) => DashronymGlossary._(
     name: _requiredText(name, 'name'),
-    entries: List<AcronymEntry>.unmodifiable(entries),
+    entries: List<DashronymEntry>.unmodifiable(entries),
     id: _optionalText(id, 'id'),
     version: _optionalText(version, 'version'),
     locale: _optionalText(locale, 'locale'),
@@ -81,9 +81,9 @@ final class DashronymGlossary {
     }
 
     final encodedEntries = reader.requiredList('entries');
-    final entries = <AcronymEntry>[
+    final entries = <DashronymEntry>[
       for (var index = 0; index < encodedEntries.length; index++)
-        AcronymEntry.fromJson(
+        DashronymEntry.fromJson(
           encodedEntries[index],
           path:
               r'$.entries['
@@ -133,7 +133,7 @@ final class DashronymGlossary {
   final String name;
 
   /// The glossary's canonical entries, in document order.
-  final List<AcronymEntry> entries;
+  final List<DashronymEntry> entries;
 
   /// An optional stable glossary identifier.
   final String? id;
@@ -178,10 +178,10 @@ final class DashronymGlossary {
       : jsonEncode(toJson());
 
   /// Creates an immutable registry from this glossary's entries.
-  AcronymRegistry toRegistry({
+  DashronymRegistry toRegistry({
     bool caseInsensitive = true,
-    AcronymDuplicatePolicy duplicatePolicy = AcronymDuplicatePolicy.reject,
-  }) => AcronymRegistry.fromAcronymEntries(
+    DashronymDuplicatePolicy duplicatePolicy = DashronymDuplicatePolicy.reject,
+  }) => DashronymRegistry.fromEntries(
     entries,
     caseInsensitive: caseInsensitive,
     duplicatePolicy: duplicatePolicy,
@@ -193,7 +193,7 @@ final class DashronymGlossary {
   /// replacement and its clear flag together is invalid.
   DashronymGlossary copyWith({
     String? name,
-    Iterable<AcronymEntry>? entries,
+    Iterable<DashronymEntry>? entries,
     String? id,
     bool clearId = false,
     String? version,

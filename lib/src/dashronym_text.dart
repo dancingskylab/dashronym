@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 
-import 'config.dart';
-import 'acronym_parser.dart';
-import 'acronym_inline.dart';
+import 'dashronym_config.dart';
+import 'dashronym_parser.dart';
+import 'dashronym_inline.dart';
 import 'dashronym_scope.dart';
-import 'registry.dart';
+import 'dashronym_registry.dart';
 import 'dashronym_theme.dart';
 
 /// Renders text with inline, accessible glossary tooltips for matched acronyms.
 ///
-/// This widget scans [text] using the provided [AcronymRegistry] and replaces
-/// matches with interactive [WidgetSpan]s (see [AcronymInline]) while
+/// This widget scans [text] using the provided [DashronymRegistry] and replaces
+/// matches with interactive [WidgetSpan]s (see [DashronymInline]) while
 /// preserving your typography, layout, and semantics. Non-matching text is
 /// emitted as regular [TextSpan]s. The result is painted by a [RichText]
 /// configured from the surrounding [DefaultTextStyle] and the provided
@@ -18,7 +18,7 @@ import 'dashronym_theme.dart';
 ///
 /// Example:
 /// ```dart
-/// final registry = AcronymRegistry({
+/// final registry = DashronymRegistry({
 ///   'SDK': 'Software Development Kit',
 ///   'API': 'Application Programming Interface',
 /// });
@@ -105,7 +105,7 @@ class DashronymText extends StatelessWidget {
   /// Acronym definitions used to resolve matches.
   ///
   /// When omitted, the nearest [DashronymScope] supplies the registry.
-  final AcronymRegistry? registry;
+  final DashronymRegistry? registry;
 
   /// Parser options such as markers, min/max lengths, and bare acronym support.
   ///
@@ -182,13 +182,13 @@ class DashronymText extends StatelessWidget {
     final effectiveRegistry = registry ?? scope?.registry;
     if (effectiveRegistry == null) {
       throw FlutterError.fromParts([
-        ErrorSummary('DashronymText requires an AcronymRegistry.'),
+        ErrorSummary('DashronymText requires a DashronymRegistry.'),
         ErrorDescription(
           'No registry was passed to DashronymText and no DashronymScope '
           'was found above it.',
         ),
         ErrorHint(
-          'Pass registry: AcronymRegistry({...}) or wrap this subtree in a '
+          'Pass registry: DashronymRegistry({...}) or wrap this subtree in a '
           'DashronymScope.',
         ),
       ]);
@@ -331,7 +331,7 @@ class _DashronymSpanTransformer {
     required this.tooltipBuilder,
   });
 
-  final AcronymRegistry registry;
+  final DashronymRegistry registry;
   final DashronymConfig config;
   final DashronymTheme theme;
   final DashronymTooltipBuilder? tooltipBuilder;

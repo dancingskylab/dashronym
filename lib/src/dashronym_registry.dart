@@ -1,9 +1,9 @@
 import 'dart:collection';
 
-import 'acronym_entry.dart';
+import 'dashronym_entry.dart';
 
-/// How [AcronymRegistry] resolves normalized canonical or alias collisions.
-enum AcronymDuplicatePolicy {
+/// How [DashronymRegistry] resolves normalized canonical or alias collisions.
+enum DashronymDuplicatePolicy {
   /// Reject the registry with a helpful [ArgumentError].
   reject,
 
@@ -23,7 +23,7 @@ enum AcronymDuplicatePolicy {
 ///
 /// Example:
 /// ```dart
-/// final reg = AcronymRegistry({
+/// final reg = DashronymRegistry({
 ///   'SDK': 'Software Development Kit',
 ///   'api': 'Application Programming Interface',
 /// });
@@ -32,7 +32,7 @@ enum AcronymDuplicatePolicy {
 /// print(reg.contains('sdk')); // true
 /// print(reg.descriptionOf('Api')); // "Application Programming Interface"
 /// ```
-class AcronymRegistry {
+class DashronymRegistry {
   /// Creates a registry from the original acronym-to-description map API.
   ///
   /// When [caseInsensitive] is `true`, all keys in [entries] are converted to
@@ -42,10 +42,11 @@ class AcronymRegistry {
   ///
   /// [duplicatePolicy] applies when distinct map keys normalize to the same
   /// lookup key. Its default preserves the historical last-value-wins behavior.
-  AcronymRegistry(
+  DashronymRegistry(
     Map<String, String> entries, {
     bool caseInsensitive = true,
-    AcronymDuplicatePolicy duplicatePolicy = AcronymDuplicatePolicy.keepLast,
+    DashronymDuplicatePolicy duplicatePolicy =
+        DashronymDuplicatePolicy.keepLast,
   }) : this._(
          caseInsensitive: caseInsensitive,
          duplicatePolicy: duplicatePolicy,
@@ -56,7 +57,7 @@ class AcronymRegistry {
          ),
        );
 
-  AcronymRegistry._({
+  DashronymRegistry._({
     required this.caseInsensitive,
     required this.duplicatePolicy,
     required _RegistryData data,
@@ -67,15 +68,15 @@ class AcronymRegistry {
 
   /// Creates a rich registry whose aliases resolve to their canonical entries.
   ///
-  /// Duplicate handling is atomic per entry: [AcronymDuplicatePolicy.keepFirst]
+  /// Duplicate handling is atomic per entry: [DashronymDuplicatePolicy.keepFirst]
   /// skips an incoming entry if any of its lookup terms collide, while
-  /// [AcronymDuplicatePolicy.keepLast] removes complete earlier entries
+  /// [DashronymDuplicatePolicy.keepLast] removes complete earlier entries
   /// involved in a collision before adding the incoming entry.
-  factory AcronymRegistry.fromAcronymEntries(
-    Iterable<AcronymEntry> entries, {
+  factory DashronymRegistry.fromEntries(
+    Iterable<DashronymEntry> entries, {
     bool caseInsensitive = true,
-    AcronymDuplicatePolicy duplicatePolicy = AcronymDuplicatePolicy.reject,
-  }) => AcronymRegistry._(
+    DashronymDuplicatePolicy duplicatePolicy = DashronymDuplicatePolicy.reject,
+  }) => DashronymRegistry._(
     caseInsensitive: caseInsensitive,
     duplicatePolicy: duplicatePolicy,
     data: _buildRichData(
@@ -86,11 +87,12 @@ class AcronymRegistry {
   );
 
   /// Creates a registry from an iterable of acronym-description entries.
-  factory AcronymRegistry.fromEntries(
+  factory DashronymRegistry.fromMapEntries(
     Iterable<MapEntry<String, String>> entries, {
     bool caseInsensitive = true,
-    AcronymDuplicatePolicy duplicatePolicy = AcronymDuplicatePolicy.keepLast,
-  }) => AcronymRegistry._(
+    DashronymDuplicatePolicy duplicatePolicy =
+        DashronymDuplicatePolicy.keepLast,
+  }) => DashronymRegistry._(
     caseInsensitive: caseInsensitive,
     duplicatePolicy: duplicatePolicy,
     data: _buildLegacyData(
@@ -101,8 +103,8 @@ class AcronymRegistry {
   );
 
   /// Creates an empty registry.
-  factory AcronymRegistry.empty({bool caseInsensitive = true}) =>
-      AcronymRegistry(const {}, caseInsensitive: caseInsensitive);
+  factory DashronymRegistry.empty({bool caseInsensitive = true}) =>
+      DashronymRegistry(const {}, caseInsensitive: caseInsensitive);
 
   /// Whether lookups are case-insensitive.
   ///
@@ -111,11 +113,11 @@ class AcronymRegistry {
   final bool caseInsensitive;
 
   /// The duplicate behavior used while constructing this registry.
-  final AcronymDuplicatePolicy duplicatePolicy;
+  final DashronymDuplicatePolicy duplicatePolicy;
 
   final Map<String, String> _entries;
   final Map<String, String> _lookupTerms;
-  final Map<String, AcronymEntry> _entryLookup;
+  final Map<String, DashronymEntry> _entryLookup;
 
   /// An unmodifiable map of normalized canonical acronyms and descriptions.
   ///
@@ -132,7 +134,7 @@ class AcronymRegistry {
   /// The unique retained rich entries, in deterministic construction order.
   ///
   /// Alias terms appear in [lookupTerms] but do not duplicate values here.
-  final List<AcronymEntry> richEntries;
+  final List<DashronymEntry> richEntries;
 
   /// The number of canonical entries.
   int get length => _entries.length;
@@ -155,7 +157,7 @@ class AcronymRegistry {
   String? descriptionOf(String key) => _lookupTerms[_normalizeKey(key)];
 
   /// Returns the rich entry associated with a canonical term or alias.
-  AcronymEntry? entryOf(String key) => _entryLookup[_normalizeKey(key)];
+  DashronymEntry? entryOf(String key) => _entryLookup[_normalizeKey(key)];
 
   /// Returns the display description associated with [key], or `null`.
   String? operator [](String key) => descriptionOf(key);
@@ -166,11 +168,11 @@ class AcronymRegistry {
   static _RegistryData _buildLegacyData(
     Iterable<MapEntry<String, String>> entries, {
     required bool caseInsensitive,
-    required AcronymDuplicatePolicy duplicatePolicy,
+    required DashronymDuplicatePolicy duplicatePolicy,
   }) {
     final descriptions = <String, String>{};
-    final lookup = <String, AcronymEntry>{};
-    final richEntries = <String, AcronymEntry>{};
+    final lookup = <String, DashronymEntry>{};
+    final richEntries = <String, DashronymEntry>{};
 
     for (final MapEntry(:key, :value) in entries) {
       final normalized = _normalize(
@@ -179,15 +181,15 @@ class AcronymRegistry {
       );
       if (descriptions.containsKey(normalized)) {
         switch (duplicatePolicy) {
-          case AcronymDuplicatePolicy.reject:
+          case DashronymDuplicatePolicy.reject:
             throw ArgumentError.value(
               key,
               'entries',
               'lookup term "$key" conflicts after normalization',
             );
-          case AcronymDuplicatePolicy.keepFirst:
+          case DashronymDuplicatePolicy.keepFirst:
             continue;
-          case AcronymDuplicatePolicy.keepLast:
+          case DashronymDuplicatePolicy.keepLast:
             lookup.remove(normalized);
             richEntries.remove(normalized);
         }
@@ -195,7 +197,7 @@ class AcronymRegistry {
 
       descriptions[normalized] = value;
       try {
-        final richEntry = AcronymEntry(acronym: key, expansion: value);
+        final richEntry = DashronymEntry(acronym: key, expansion: value);
         lookup[normalized] = richEntry;
         richEntries[normalized] = richEntry;
       } on ArgumentError {
@@ -209,18 +211,18 @@ class AcronymRegistry {
     return _RegistryData(
       descriptions: frozenDescriptions,
       lookupDescriptions: frozenDescriptions,
-      lookup: Map<String, AcronymEntry>.unmodifiable(lookup),
-      richEntries: List<AcronymEntry>.unmodifiable(richEntries.values),
+      lookup: Map<String, DashronymEntry>.unmodifiable(lookup),
+      richEntries: List<DashronymEntry>.unmodifiable(richEntries.values),
     );
   }
 
   static _RegistryData _buildRichData(
-    Iterable<AcronymEntry> source, {
+    Iterable<DashronymEntry> source, {
     required bool caseInsensitive,
-    required AcronymDuplicatePolicy duplicatePolicy,
+    required DashronymDuplicatePolicy duplicatePolicy,
   }) {
-    final lookup = <String, AcronymEntry>{};
-    final canonicalEntries = <String, AcronymEntry>{};
+    final lookup = <String, DashronymEntry>{};
+    final canonicalEntries = <String, DashronymEntry>{};
     final canonicalDescriptions = <String, String>{};
 
     for (final entry in source) {
@@ -240,13 +242,13 @@ class AcronymRegistry {
       ];
       final collisions = [
         for (final term in terms)
-          if (lookup[term.normalized] case final AcronymEntry owner)
+          if (lookup[term.normalized] case final DashronymEntry owner)
             (term: term, owner: owner),
       ];
 
       if (collisions.isNotEmpty) {
         switch (duplicatePolicy) {
-          case AcronymDuplicatePolicy.reject:
+          case DashronymDuplicatePolicy.reject:
             final collision = collisions.first;
             throw ArgumentError.value(
               entry.acronym,
@@ -254,10 +256,10 @@ class AcronymRegistry {
               'lookup term "${collision.term.raw}" conflicts with '
                   '"${collision.owner.acronym}" after normalization',
             );
-          case AcronymDuplicatePolicy.keepFirst:
+          case DashronymDuplicatePolicy.keepFirst:
             continue;
-          case AcronymDuplicatePolicy.keepLast:
-            final displaced = HashSet<AcronymEntry>.identity()
+          case DashronymDuplicatePolicy.keepLast:
+            final displaced = HashSet<DashronymEntry>.identity()
               ..addAll(collisions.map((collision) => collision.owner));
             final displacedCanonicalKeys = [
               for (final MapEntry(:key, :value) in canonicalEntries.entries)
@@ -285,13 +287,13 @@ class AcronymRegistry {
     }
 
     return _RegistryData(
-      lookup: Map<String, AcronymEntry>.unmodifiable(lookup),
+      lookup: Map<String, DashronymEntry>.unmodifiable(lookup),
       lookupDescriptions: Map<String, String>.unmodifiable({
         for (final MapEntry(:key, :value) in lookup.entries)
           key: value.displayDescription,
       }),
       descriptions: Map<String, String>.unmodifiable(canonicalDescriptions),
-      richEntries: List<AcronymEntry>.unmodifiable(canonicalEntries.values),
+      richEntries: List<DashronymEntry>.unmodifiable(canonicalEntries.values),
     );
   }
 
@@ -309,8 +311,8 @@ final class _RegistryData {
     required this.richEntries,
   });
 
-  final Map<String, AcronymEntry> lookup;
+  final Map<String, DashronymEntry> lookup;
   final Map<String, String> descriptions;
   final Map<String, String> lookupDescriptions;
-  final List<AcronymEntry> richEntries;
+  final List<DashronymEntry> richEntries;
 }

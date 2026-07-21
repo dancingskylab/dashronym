@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 
-import 'package:dashronym/src/tooltip_positioner.dart';
+import 'package:dashronym/src/dashronym_tooltip_positioner.dart';
 import 'package:dashronym/src/dashronym_theme.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,10 +8,10 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   const theme = DashronymTheme(tooltipOffset: Offset(0, 6), enableHover: false);
 
-  group('AcronymTooltipPositioner.baseFollowerOffset', () {
+  group('DashronymTooltipPositioner.baseFollowerOffset', () {
     test('returns offset below anchor for LTR', () {
       final anchorSize = const Size(120, 20);
-      final offset = AcronymTooltipPositioner.baseFollowerOffset(
+      final offset = DashronymTooltipPositioner.baseFollowerOffset(
         anchorSize: anchorSize,
         theme: theme,
         direction: TextDirection.ltr,
@@ -29,7 +29,7 @@ void main() {
       );
       final anchorSize = const Size(120, 20);
 
-      final offset = AcronymTooltipPositioner.baseFollowerOffset(
+      final offset = DashronymTooltipPositioner.baseFollowerOffset(
         anchorSize: anchorSize,
         theme: rtlTheme,
         direction: TextDirection.rtl,
@@ -40,7 +40,7 @@ void main() {
     });
   });
 
-  group('AcronymTooltipPositioner.resolveFollowerOffset', () {
+  group('DashronymTooltipPositioner.resolveFollowerOffset', () {
     test('matches base offset when tooltip fits inside viewport (LTR)', () {
       const overlaySize = Size(400, 400);
       const anchorTopLeft = Offset(50, 10);
@@ -48,7 +48,7 @@ void main() {
       const tooltipSize = Size(150, 80);
       const padding = EdgeInsets.zero;
 
-      final offset = AcronymTooltipPositioner.resolveFollowerOffset(
+      final offset = DashronymTooltipPositioner.resolveFollowerOffset(
         overlaySize: overlaySize,
         anchorTopLeft: anchorTopLeft,
         anchorSize: anchorSize,
@@ -59,7 +59,7 @@ void main() {
         direction: TextDirection.ltr,
       );
 
-      final base = AcronymTooltipPositioner.baseFollowerOffset(
+      final base = DashronymTooltipPositioner.baseFollowerOffset(
         anchorSize: anchorSize,
         theme: theme,
         direction: TextDirection.ltr,
@@ -74,7 +74,7 @@ void main() {
       const anchorSize = Size(80, 20);
       const tooltipSize = Size(180, 80);
 
-      final offset = AcronymTooltipPositioner.resolveFollowerOffset(
+      final offset = DashronymTooltipPositioner.resolveFollowerOffset(
         overlaySize: overlaySize,
         anchorTopLeft: anchorTopLeft,
         anchorSize: anchorSize,
@@ -96,7 +96,7 @@ void main() {
       const anchorSize = Size(80, 20);
       const tooltipSize = Size(180, 80);
 
-      final offset = AcronymTooltipPositioner.resolveFollowerOffset(
+      final offset = DashronymTooltipPositioner.resolveFollowerOffset(
         overlaySize: overlaySize,
         anchorTopLeft: anchorTopLeft,
         anchorSize: anchorSize,
@@ -123,7 +123,7 @@ void main() {
       const anchorTopLeft = Offset(260, 10);
       const anchorSize = Size(80, 20);
       const tooltipSize = Size(180, 80);
-      final offset = AcronymTooltipPositioner.resolveFollowerOffset(
+      final offset = DashronymTooltipPositioner.resolveFollowerOffset(
         overlaySize: overlaySize,
         anchorTopLeft: anchorTopLeft,
         anchorSize: anchorSize,
@@ -145,7 +145,7 @@ void main() {
       const anchorSize = Size(80, 20);
       const tooltipSize = Size(200, 80);
 
-      final offset = AcronymTooltipPositioner.resolveFollowerOffset(
+      final offset = DashronymTooltipPositioner.resolveFollowerOffset(
         overlaySize: overlaySize,
         anchorTopLeft: anchorTopLeft,
         anchorSize: anchorSize,
@@ -166,7 +166,7 @@ void main() {
       const anchorSize = Size(80, 20);
       const tooltipSize = Size(180, 110);
 
-      final offset = AcronymTooltipPositioner.resolveFollowerOffset(
+      final offset = DashronymTooltipPositioner.resolveFollowerOffset(
         overlaySize: overlaySize,
         anchorTopLeft: anchorTopLeft,
         anchorSize: anchorSize,
@@ -195,7 +195,7 @@ void main() {
       const anchorSize = Size(80, 20);
       const tooltipSize = Size(200, 120);
 
-      final offset = AcronymTooltipPositioner.resolveFollowerOffset(
+      final offset = DashronymTooltipPositioner.resolveFollowerOffset(
         overlaySize: overlaySize,
         anchorTopLeft: anchorTopLeft,
         anchorSize: anchorSize,
@@ -217,7 +217,7 @@ void main() {
       const anchorSize = Size(80, 20);
       const tooltipSize = Size(200, 80);
 
-      final offset = AcronymTooltipPositioner.resolveFollowerOffset(
+      final offset = DashronymTooltipPositioner.resolveFollowerOffset(
         overlaySize: overlaySize,
         anchorTopLeft: anchorTopLeft,
         anchorSize: anchorSize,
@@ -238,7 +238,7 @@ void main() {
       const anchorSize = Size(80, 20);
       const tooltipSize = Size(120, 80);
 
-      final ltr = AcronymTooltipPositioner.resolveFollowerOffset(
+      final ltr = DashronymTooltipPositioner.resolveFollowerOffset(
         overlaySize: overlaySize,
         anchorTopLeft: anchorTopLeft,
         anchorSize: anchorSize,
@@ -248,7 +248,7 @@ void main() {
         keyboardInset: 0,
         direction: TextDirection.ltr,
       );
-      final rtl = AcronymTooltipPositioner.resolveFollowerOffset(
+      final rtl = DashronymTooltipPositioner.resolveFollowerOffset(
         overlaySize: overlaySize,
         anchorTopLeft: anchorTopLeft,
         anchorSize: anchorSize,
@@ -279,7 +279,7 @@ void main() {
       const anchorSize = Size(80, 20);
       const tooltipSize = Size(220, 240);
 
-      final offset = AcronymTooltipPositioner.resolveFollowerOffset(
+      final offset = DashronymTooltipPositioner.resolveFollowerOffset(
         overlaySize: overlaySize,
         anchorTopLeft: anchorTopLeft,
         anchorSize: anchorSize,
@@ -300,7 +300,7 @@ void main() {
       const anchorSize = Size(80, 20);
       const tooltipSize = Size(220, 0);
 
-      final offset = AcronymTooltipPositioner.resolveFollowerOffset(
+      final offset = DashronymTooltipPositioner.resolveFollowerOffset(
         overlaySize: overlaySize,
         anchorTopLeft: anchorTopLeft,
         anchorSize: anchorSize,
