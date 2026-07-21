@@ -156,10 +156,10 @@ class DashronymTooltipDetails {
 /// a live region.
 ///
 /// Layout/overlay:
-/// Uses [OverlayPortal] with a [CompositedTransformTarget]/
-/// [CompositedTransformFollower] pair. The portal preserves trigger-local
-/// inherited widgets and owns the tooltip lifecycle so the surface cannot
-/// outlive its inline trigger.
+/// Uses [OverlayPortal.overlayChildLayoutBuilder] to position the tooltip from
+/// the trigger's layout transform. The portal preserves trigger-local inherited
+/// widgets, supports nested overlays, and owns the tooltip lifecycle so the
+/// surface cannot outlive its inline trigger.
 class DashronymInline extends StatefulWidget {
   /// Creates an inline acronym control that shows a tooltip when activated.
   const DashronymInline({
@@ -232,7 +232,6 @@ class _DashronymInlineState extends State<DashronymInline>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   static _DashronymInlineState? _activeTooltip;
 
-  final LayerLink _link = LayerLink();
   final FocusNode _focusNode = FocusNode(debugLabel: 'DashronymInline');
   final FocusScopeNode _tooltipFocusScope = FocusScopeNode(
     debugLabel: 'DashronymTooltip',
@@ -254,14 +253,11 @@ class _DashronymInlineState extends State<DashronymInline>
   late final AnimationController _fadeController;
   late Animation<double> _opacity;
   late Animation<double> _scale;
-  final GlobalKey _tooltipKey = GlobalKey();
-  Offset _followerOffset = Offset.zero;
   bool _isDisposing = false;
   int _visibilityGeneration = 0;
   Orientation? _lastOrientation;
 
   static const double _viewportMargin = 8.0;
-  static const double _offsetEpsilon = 0.5;
 
   @override
   void initState() {
@@ -318,9 +314,6 @@ class _DashronymInlineState extends State<DashronymInline>
       _fadeController.duration = widget.theme.tooltipFadeDuration;
     }
     _configureAnimations(widget.theme);
-    if (_tooltipVisible) {
-      _postFrameIfVisible(_updateTooltipPosition);
-    }
   }
 
   @override
@@ -366,32 +359,6 @@ class _DashronymInlineState extends State<DashronymInline>
     _scrollPosition?.removeListener(_handleScrollDismiss);
     _scrollPosition = newPosition;
     _scrollPosition?.addListener(_handleScrollDismiss);
-  }
-
-  void _setFollowerOffset(Offset next) {
-    if ((_followerOffset - next).distance < _offsetEpsilon) return;
-    _followerOffset = next;
-    if (_isDisposing) return;
-    if (mounted && _tooltipVisible) {
-      setState(() {});
-    }
-  }
-
-  RenderBox? _boxOf(BuildContext? context, {bool requireSize = true}) {
-    if (!mounted || context == null) return null;
-    final renderObject = context.findRenderObject();
-    if (renderObject is! RenderBox || !renderObject.attached) return null;
-    if (!renderObject.hasSize || (requireSize && renderObject.size.isEmpty)) {
-      return null;
-    }
-    return renderObject;
-  }
-
-  void _postFrameIfVisible(void Function() fn) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !_tooltipVisible || _isDisposing) return;
-      fn();
-    });
   }
 
   void _handleScrollDismiss() {
@@ -463,17 +430,7 @@ class _DashronymInlineState extends State<DashronymInline>
     _hoverShowTimer?.cancel();
     _hoverHideTimer?.cancel();
 
-    final renderBox = _boxOf(context);
-    final targetSize = renderBox?.size ?? Size.zero;
-    final direction = Directionality.of(context);
     final strings = DashronymLocalizations.of(context);
-    _setFollowerOffset(
-      DashronymTooltipPositioner.baseFollowerOffset(
-        anchorSize: targetSize,
-        theme: widget.theme,
-        direction: direction,
-      ),
-    );
 
     if (_activeTooltip != this) {
       _activeTooltip?._hide(immediate: true, announce: false);
@@ -492,8 +449,6 @@ class _DashronymInlineState extends State<DashronymInline>
         widget.description,
       ),
     );
-
-    _postFrameIfVisible(_updateTooltipPosition);
   }
 
   void _hide({
@@ -594,8 +549,15 @@ class _DashronymInlineState extends State<DashronymInline>
     });
   }
 
-  Widget _buildOverlay(BuildContext context) {
-    _postFrameIfVisible(_updateTooltipPosition);
+  Widget _buildOverlay(
+    BuildContext context,
+    OverlayChildLayoutInfo layoutInfo,
+  ) {
+    final triggerMediaQuery = MediaQuery.maybeOf(this.context);
+    final anchorRect = MatrixUtils.transformRect(
+      layoutInfo.childPaintTransform,
+      Offset.zero & layoutInfo.childSize,
+    );
     final tooltipDetails = DashronymTooltipDetails(
       acronym: widget.acronym,
       description: widget.description,
@@ -612,14 +574,11 @@ class _DashronymInlineState extends State<DashronymInline>
           theme: widget.theme,
           onClose: () => _hide(restoreFocus: true),
         );
-    final keyedTooltip = KeyedSubtree(
-      key: _tooltipKey,
-      child: _TooltipViewportClamp(
-        theme: widget.theme,
-        mediaQuery: MediaQuery.maybeOf(this.context),
-        makeScrollable: isCustomTooltip,
-        child: builtTooltip,
-      ),
+    final tooltip = _TooltipViewportClamp(
+      theme: widget.theme,
+      mediaQuery: triggerMediaQuery,
+      makeScrollable: isCustomTooltip,
+      child: builtTooltip,
     );
 
     Widget result = Shortcuts(
@@ -661,29 +620,36 @@ class _DashronymInlineState extends State<DashronymInline>
                   ),
                 ),
               ),
-              CompositedTransformFollower(
-                link: _link,
-                showWhenUnlinked: false,
-                offset: _followerOffset,
-                child: MouseRegion(
-                  opaque: false,
-                  onEnter: widget.theme.enableHover
-                      ? (_) {
-                          _hoveringTooltip = true;
-                          _hoverHideTimer?.cancel();
-                        }
-                      : null,
-                  onExit: widget.theme.enableHover
-                      ? (_) {
-                          _hoveringTooltip = false;
-                          _scheduleHoverHide();
-                        }
-                      : null,
-                  child: FadeTransition(
-                    opacity: _opacity,
-                    child: ScaleTransition(
-                      scale: _scale,
-                      child: keyedTooltip,
+              Positioned.fill(
+                child: CustomSingleChildLayout(
+                  delegate: _DashronymTooltipLayoutDelegate(
+                    anchorRect: anchorRect,
+                    theme: widget.theme,
+                    padding: triggerMediaQuery?.padding ?? EdgeInsets.zero,
+                    keyboardInset: triggerMediaQuery?.viewInsets.bottom ?? 0.0,
+                    direction: Directionality.of(this.context),
+                    viewportMargin: _viewportMargin,
+                  ),
+                  child: MouseRegion(
+                    opaque: false,
+                    onEnter: widget.theme.enableHover
+                        ? (_) {
+                            _hoveringTooltip = true;
+                            _hoverHideTimer?.cancel();
+                          }
+                        : null,
+                    onExit: widget.theme.enableHover
+                        ? (_) {
+                            _hoveringTooltip = false;
+                            _scheduleHoverHide();
+                          }
+                        : null,
+                    child: FadeTransition(
+                      opacity: _opacity,
+                      child: ScaleTransition(
+                        scale: _scale,
+                        child: tooltip,
+                      ),
                     ),
                   ),
                 ),
@@ -693,59 +659,12 @@ class _DashronymInlineState extends State<DashronymInline>
         ),
       ),
     );
-    final triggerMediaQuery = MediaQuery.maybeOf(this.context);
     if (triggerMediaQuery != null) {
       result = MediaQuery(data: triggerMediaQuery, child: result);
     }
-    // OverlayPortal normally gives an unpositioned overlay child the
-    // constraints of the portal's source. A source inside a WidgetSpan can be
-    // laid out with zero-width constraints, which would make tooltip text wrap
-    // one character per line. Positioning the surface explicitly makes it use
-    // the root overlay's full viewport instead.
+    // The layout-builder portal provides root-overlay constraints even when the
+    // source lives in a tightly constrained WidgetSpan.
     return Positioned.fill(child: result);
-  }
-
-  void _updateTooltipPosition() {
-    if (!_tooltipVisible) return;
-
-    final overlay = Overlay.of(context, rootOverlay: true);
-    final overlayBox = _boxOf(overlay.context);
-    final targetBox = _boxOf(context);
-    final tooltipBox = _boxOf(_tooltipKey.currentContext, requireSize: false);
-
-    if (overlayBox == null || targetBox == null || tooltipBox == null) {
-      if (tooltipBox == null) {
-        _postFrameIfVisible(_updateTooltipPosition); // coverage:ignore-line
-      }
-      return;
-    }
-
-    final overlaySize = overlayBox.size;
-    final anchorTopLeft = targetBox.localToGlobal(
-      Offset.zero,
-      ancestor: overlayBox,
-    );
-    final anchorSize = targetBox.size;
-    final direction = Directionality.of(context);
-    final mediaQuery = MediaQuery.maybeOf(context);
-
-    final padding = mediaQuery?.padding ?? EdgeInsets.zero;
-    final rawKeyboardInset = mediaQuery?.viewInsets.bottom ?? 0.0;
-    final keyboardInset = rawKeyboardInset < 0.0 ? 0.0 : rawKeyboardInset;
-
-    final newOffset = DashronymTooltipPositioner.resolveFollowerOffset(
-      overlaySize: overlaySize,
-      anchorTopLeft: anchorTopLeft,
-      anchorSize: anchorSize,
-      tooltipSize: tooltipBox.size,
-      theme: widget.theme,
-      padding: padding,
-      keyboardInset: keyboardInset,
-      direction: direction,
-      viewportMargin: _viewportMargin,
-    );
-
-    _setFollowerOffset(newOffset);
   }
 
   TextStyle _effectiveTextStyle(BuildContext context) {
@@ -779,48 +698,45 @@ class _DashronymInlineState extends State<DashronymInline>
       locale: widget.locale,
     );
 
-    Widget result = CompositedTransformTarget(
-      link: _link,
-      child: GestureDetector(
-        onTap: () {
-          final wasVisible = _tooltipVisible;
-          if (!_focusNode.hasFocus) {
-            _focusNode.requestFocus();
-          }
-          if (wasVisible) {
-            _hide();
-          } else {
-            _show();
-          }
-        },
-        behavior: HitTestBehavior.opaque,
-        child: MouseRegion(
-          onEnter: widget.theme.enableHover
-              ? (_) {
-                  _hoveringTrigger = true;
-                  _hoverShowTimer?.cancel();
-                  _hoverHideTimer?.cancel();
-                  _hoverShowTimer = Timer(widget.theme.hoverShowDelay, () {
-                    if (mounted && !_isDisposing && _hoveringTrigger) {
-                      _show();
-                    }
-                  });
-                }
-              : null,
-          onExit: widget.theme.enableHover
-              ? (_) {
-                  _hoveringTrigger = false;
-                  _hoverShowTimer?.cancel();
-                  _scheduleHoverHide();
-                }
-              : null,
-          cursor: SystemMouseCursors.click,
-          child: textWidget,
-        ),
+    Widget result = GestureDetector(
+      onTap: () {
+        final wasVisible = _tooltipVisible;
+        if (!_focusNode.hasFocus) {
+          _focusNode.requestFocus();
+        }
+        if (wasVisible) {
+          _hide();
+        } else {
+          _show();
+        }
+      },
+      behavior: HitTestBehavior.opaque,
+      child: MouseRegion(
+        onEnter: widget.theme.enableHover
+            ? (_) {
+                _hoveringTrigger = true;
+                _hoverShowTimer?.cancel();
+                _hoverHideTimer?.cancel();
+                _hoverShowTimer = Timer(widget.theme.hoverShowDelay, () {
+                  if (mounted && !_isDisposing && _hoveringTrigger) {
+                    _show();
+                  }
+                });
+              }
+            : null,
+        onExit: widget.theme.enableHover
+            ? (_) {
+                _hoveringTrigger = false;
+                _hoverShowTimer?.cancel();
+                _scheduleHoverHide();
+              }
+            : null,
+        cursor: SystemMouseCursors.click,
+        child: textWidget,
       ),
     );
 
-    result = OverlayPortal(
+    result = OverlayPortal.overlayChildLayoutBuilder(
       controller: _portalController,
       overlayLocation: OverlayChildLocation.rootOverlay,
       overlayChildBuilder: _buildOverlay,
@@ -893,6 +809,53 @@ class _DashronymInlineState extends State<DashronymInline>
       child: result,
     );
   }
+}
+
+class _DashronymTooltipLayoutDelegate extends SingleChildLayoutDelegate {
+  const _DashronymTooltipLayoutDelegate({
+    required this.anchorRect,
+    required this.theme,
+    required this.padding,
+    required this.keyboardInset,
+    required this.direction,
+    required this.viewportMargin,
+  });
+
+  final Rect anchorRect;
+  final DashronymTheme theme;
+  final EdgeInsets padding;
+  final double keyboardInset;
+  final TextDirection direction;
+  final double viewportMargin;
+
+  @override
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) =>
+      constraints.loosen();
+
+  @override
+  Offset getPositionForChild(Size size, Size childSize) {
+    final relativeOffset = DashronymTooltipPositioner.resolveOffset(
+      overlaySize: size,
+      anchorTopLeft: anchorRect.topLeft,
+      anchorSize: anchorRect.size,
+      tooltipSize: childSize,
+      theme: theme,
+      padding: padding,
+      keyboardInset: keyboardInset,
+      direction: direction,
+      viewportMargin: viewportMargin,
+    );
+    return anchorRect.topLeft + relativeOffset;
+  }
+
+  @override
+  bool shouldRelayout(_DashronymTooltipLayoutDelegate oldDelegate) =>
+      anchorRect != oldDelegate.anchorRect ||
+      theme != oldDelegate.theme ||
+      padding != oldDelegate.padding ||
+      keyboardInset != oldDelegate.keyboardInset ||
+      direction != oldDelegate.direction ||
+      viewportMargin != oldDelegate.viewportMargin;
 }
 
 class _TooltipViewportClamp extends StatelessWidget {

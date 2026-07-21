@@ -40,8 +40,9 @@ upgrade examples and behavior changes.
 - Made `DashronymText` registry, configuration, theme, and tooltip builder
   inheritable. Explicit arguments take precedence over `DashronymScope`, then
   app theme and package defaults.
-- Rebuilt tooltip ownership around `OverlayPortal` so inherited context,
-  lifecycle, focus traversal, and root-overlay positioning stay consistent.
+- Rebuilt tooltip ownership around `OverlayPortal` with layout-time anchor
+  positioning so inherited context, lifecycle, focus traversal, nested
+  overlays, and root-overlay geometry stay consistent.
 - Defined keyboard, hover, outside-tap, Escape, scroll, resize, focus
   restoration, and single-active-tooltip behavior.
 - Applied one capability-aware screen-reader announcement path that exposes the
@@ -71,6 +72,8 @@ upgrade examples and behavior changes.
   matching conservative.
 - Prevented rapid hide/reopen animation completions from removing a replacement
   tooltip.
+- Prevented hover tooltips inside stock or custom card controls from triggering
+  Flutter `RenderFollowerLayer` layout assertions.
 - Kept hover-open tooltips visible while the pointer moves between the trigger
   and surface.
 - Prevented WidgetSpan trigger text from receiving the effective scale twice

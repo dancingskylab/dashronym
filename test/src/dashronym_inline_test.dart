@@ -237,6 +237,34 @@ void main() {
     await gesture.removePointer();
   });
 
+  testWidgets('close button tooltip can open inside the Dashronym overlay', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _testHarness(
+        const DashronymInline(
+          acronym: 'SDK',
+          description: 'Software Development Kit',
+          theme: DashronymTheme(enableHover: false),
+          textStyle: TextStyle(),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('SDK'));
+    await tester.pumpAndSettle();
+
+    final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await gesture.addPointer();
+    await gesture.moveTo(tester.getCenter(find.byType(IconButton)));
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.byTooltip('Hide definition for SDK'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    await gesture.removePointer();
+  });
+
   testWidgets('pointer-open tooltip dismisses with Escape', (tester) async {
     await tester.pumpWidget(
       _testHarness(

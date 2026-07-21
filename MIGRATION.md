@@ -297,6 +297,7 @@ The tooltip contract is now consistent across stock and custom content:
 - opening another acronym closes the previous tooltip;
 - outside activation, focus departure, and ancestor scrolling dismiss it;
 - trigger-local inherited theme and media-query values reach the overlay;
+- card controls can open nested overlays such as Material hover tooltips;
 - safe areas, visible keyboard insets, viewport size, and theme width limits
   produce one bounded geometry contract; and
 - long stock or custom content receives a scrollable host.

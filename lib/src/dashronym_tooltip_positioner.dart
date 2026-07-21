@@ -4,7 +4,7 @@ import 'package:flutter/widgets.dart';
 
 import 'dashronym_theme.dart';
 
-/// Computes follower offsets for the inline acronym tooltip overlay.
+/// Computes offsets for the inline acronym tooltip overlay.
 ///
 /// This helper centralizes the geometry calculations that keep the tooltip
 /// within the visible viewport. It accounts for safe areas, keyboard insets,
@@ -12,15 +12,15 @@ import 'dashronym_theme.dart';
 class DashronymTooltipPositioner {
   const DashronymTooltipPositioner._(); // coverage:ignore-line
 
-  /// Returns the baseline follower offset relative to the anchor before any
+  /// Returns the baseline offset relative to the anchor before any
   /// viewport clamping is applied.
   ///
   /// The result positions the tooltip immediately below the inline trigger.
   ///
-  /// Horizontal placement is refined later in [resolveFollowerOffset] once the
+  /// Horizontal placement is refined later in [resolveOffset] once the
   /// tooltip size is known; here we only apply the vertical component from
   /// [DashronymTheme.tooltipOffset].
-  static Offset baseFollowerOffset({
+  static Offset baseOffset({
     required Size anchorSize,
     required DashronymTheme theme,
     required TextDirection direction,
@@ -31,7 +31,7 @@ class DashronymTooltipPositioner {
     );
   }
 
-  /// Resolves the final follower offset relative to the anchor’s top-left after
+  /// Resolves the final offset relative to the anchor’s top-left after
   /// enforcing viewport margins, safe-area padding, and keyboard insets.
   ///
   /// When the tooltip would overflow to the right, it clamps within the overlay
@@ -45,7 +45,7 @@ class DashronymTooltipPositioner {
   /// describe safe-area insets, while [keyboardInset] reserves space for an
   /// on-screen keyboard. Use [viewportMargin] to keep the tooltip away from the
   /// overlay edges.
-  static Offset resolveFollowerOffset({
+  static Offset resolveOffset({
     required Size overlaySize,
     required Offset anchorTopLeft,
     required Size anchorSize,
@@ -56,7 +56,7 @@ class DashronymTooltipPositioner {
     required TextDirection direction,
     double viewportMargin = 8.0,
   }) {
-    final baseOffset = baseFollowerOffset(
+    final baseOffset = DashronymTooltipPositioner.baseOffset(
       anchorSize: anchorSize,
       theme: theme,
       direction: direction,
