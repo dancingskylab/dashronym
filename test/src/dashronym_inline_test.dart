@@ -3,6 +3,7 @@ import 'dart:ui' show PointerDeviceKind, Tristate;
 import 'package:dashronym/dashronym.dart';
 import 'package:dashronym/src/dashronym_inline.dart';
 import 'package:dashronym/src/dashronym_tooltip_card.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -197,6 +198,59 @@ void main() {
     await gesture.removePointer();
   });
 
+  testWidgets(
+    'hover-open tooltip dismisses with Escape without stealing focus',
+    (
+      tester,
+    ) async {
+      final otherFocus = FocusNode(debugLabel: 'other-control');
+      addTearDown(otherFocus.dispose);
+      const hoverTheme = DashronymTheme(
+        enableHover: true,
+        hoverShowDelay: Duration(milliseconds: 10),
+        hoverHideDelay: Duration(milliseconds: 50),
+      );
+
+      await tester.pumpWidget(
+        _testHarness(
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Focus(
+                focusNode: otherFocus,
+                child: const SizedBox.square(dimension: 1),
+              ),
+              const DashronymInline(
+                acronym: 'UI',
+                description: 'User Interface',
+                theme: hoverTheme,
+                textStyle: TextStyle(),
+              ),
+            ],
+          ),
+        ),
+      );
+      otherFocus.requestFocus();
+      await tester.pump();
+      expect(otherFocus.hasFocus, isTrue);
+
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await gesture.addPointer();
+      await gesture.moveTo(tester.getCenter(find.text('UI')));
+      await tester.pump(const Duration(milliseconds: 20));
+      await tester.pumpAndSettle();
+      expect(find.byType(DashronymTooltipCard), findsOneWidget);
+      expect(otherFocus.hasFocus, isTrue);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DashronymTooltipCard), findsNothing);
+      expect(otherFocus.hasFocus, isTrue);
+      await gesture.removePointer();
+    },
+  );
+
   testWidgets('hover can move from trigger into tooltip without dismissing', (
     tester,
   ) async {
@@ -285,6 +339,68 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pumpAndSettle();
     expect(find.byType(DashronymTooltipCard), findsNothing);
+  });
+
+  testWidgets('rebuilds dispose replaced tooltip curve animations', (
+    tester,
+  ) async {
+    final events = <ObjectEvent>[];
+
+    bool isTooltipCurve(Object object) =>
+        object is CurvedAnimation &&
+        object.parent is AnimationController &&
+        (object.parent as AnimationController).debugLabel == 'DashronymTooltip';
+
+    void allocationsListener(ObjectEvent event) {
+      if (isTooltipCurve(event.object)) {
+        events.add(event);
+      }
+    }
+
+    FlutterMemoryAllocations.instance.addListener(allocationsListener);
+    addTearDown(
+      () => FlutterMemoryAllocations.instance.removeListener(
+        allocationsListener,
+      ),
+    );
+
+    var useLinearCurve = false;
+    late StateSetter rebuild;
+    await tester.pumpWidget(
+      _testHarness(
+        StatefulBuilder(
+          builder: (context, setState) {
+            rebuild = setState;
+            return DashronymInline(
+              acronym: 'SDK',
+              description: 'Software Development Kit',
+              theme: DashronymTheme(
+                enableHover: false,
+                tooltipFadeInCurve: useLinearCurve
+                    ? Curves.linear
+                    : Curves.easeOut,
+              ),
+              textStyle: const TextStyle(),
+            );
+          },
+        ),
+      ),
+    );
+
+    expect(events.whereType<ObjectCreated>(), hasLength(2));
+    expect(events.whereType<ObjectDisposed>(), isEmpty);
+
+    rebuild(() {
+      useLinearCurve = true;
+    });
+    await tester.pump();
+
+    expect(events.whereType<ObjectCreated>(), hasLength(4));
+    expect(events.whereType<ObjectDisposed>(), hasLength(2));
+
+    await tester.pumpWidget(const SizedBox.shrink());
+
+    expect(events.whereType<ObjectDisposed>(), hasLength(4));
   });
 
   testWidgets('direct DashronymInline honors ambient text scaling', (
@@ -607,29 +723,32 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Opening one tooltip hides any previously open tooltip', (
+  testWidgets('one scope keeps only one tooltip open', (
     tester,
   ) async {
     await tester.pumpWidget(
       _testHarness(
-        FocusTraversalGroup(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DashronymInline(
-                acronym: 'SDK',
-                description: 'Software Development Kit',
-                theme: _theme(),
-                textStyle: const TextStyle(),
-              ),
-              const SizedBox(height: 12),
-              DashronymInline(
-                acronym: 'API',
-                description: 'Application Programming Interface',
-                theme: _theme(),
-                textStyle: const TextStyle(),
-              ),
-            ],
+        DashronymScope(
+          registry: DashronymRegistry(<String, String>{}),
+          child: FocusTraversalGroup(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DashronymInline(
+                  acronym: 'SDK',
+                  description: 'Software Development Kit',
+                  theme: _theme(),
+                  textStyle: const TextStyle(),
+                ),
+                const SizedBox(height: 12),
+                DashronymInline(
+                  acronym: 'API',
+                  description: 'Application Programming Interface',
+                  theme: _theme(),
+                  textStyle: const TextStyle(),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -645,17 +764,125 @@ void main() {
     expect(find.text('Application Programming Interface'), findsOneWidget);
   });
 
+  testWidgets(
+    'tab traversal escapes an open tooltip and wraps back to the first '
+    'trigger',
+    (tester) async {
+      await tester.pumpWidget(
+        _testHarness(
+          DashronymScope(
+            registry: DashronymRegistry(<String, String>{}),
+            child: FocusTraversalGroup(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DashronymInline(
+                    acronym: 'SDK',
+                    description: 'Software Development Kit',
+                    theme: _theme(),
+                    textStyle: const TextStyle(),
+                  ),
+                  const SizedBox(height: 12),
+                  DashronymInline(
+                    acronym: 'API',
+                    description: 'Application Programming Interface',
+                    theme: _theme(),
+                    textStyle: const TextStyle(),
+                  ),
+                  const SizedBox(height: 12),
+                  DashronymInline(
+                    acronym: 'CLI',
+                    description: 'Command Line Interface',
+                    theme: _theme(),
+                    textStyle: const TextStyle(),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      Future<void> tab() async {
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pumpAndSettle();
+      }
+
+      await tab();
+      expect(find.text('Software Development Kit'), findsOneWidget);
+      await tab();
+      expect(find.text('Application Programming Interface'), findsOneWidget);
+      await tab();
+      expect(find.text('Command Line Interface'), findsOneWidget);
+
+      // The next stop is the open tooltip's own close button, not another
+      // trigger.
+      await tab();
+      expect(find.text('Command Line Interface'), findsOneWidget);
+      final closeButtonFocus = FocusManager.instance.primaryFocus;
+      expect(closeButtonFocus, isNotNull);
+
+      // Tabbing past the tooltip's only control must escape the tooltip's
+      // focus scope and land back on the first trigger, not loop on the
+      // close button forever.
+      await tab();
+      expect(find.text('Command Line Interface'), findsNothing);
+      expect(find.text('Software Development Kit'), findsOneWidget);
+      expect(FocusManager.instance.primaryFocus, isNot(closeButtonFocus));
+    },
+  );
+
+  testWidgets('independent scopes do not dismiss each other', (tester) async {
+    final semantics = tester.ensureSemantics();
+
+    await tester.pumpWidget(
+      _testHarness(
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            DashronymScope(
+              registry: DashronymRegistry(<String, String>{}),
+              child: DashronymInline(
+                acronym: 'SDK',
+                description: 'Software Development Kit',
+                theme: _theme(),
+                textStyle: const TextStyle(),
+              ),
+            ),
+            const SizedBox(width: 24),
+            DashronymScope(
+              registry: DashronymRegistry(<String, String>{}),
+              child: DashronymInline(
+                acronym: 'API',
+                description: 'Application Programming Interface',
+                theme: _theme(),
+                textStyle: const TextStyle(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    tester.semantics.tap(
+      find.semantics.byHint('Double tap to show definition for SDK.'),
+    );
+    await tester.pumpAndSettle();
+    tester.semantics.tap(
+      find.semantics.byHint('Double tap to show definition for API.'),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Software Development Kit'), findsOneWidget);
+    expect(find.text('Application Programming Interface'), findsOneWidget);
+
+    semantics.dispose();
+  });
+
   testWidgets('DashronymInline uses custom tooltipBuilder when provided', (
     tester,
   ) async {
     final tooltipKey = GlobalKey();
-    final entry = DashronymEntry(
-      acronym: 'API',
-      expansion: 'Application Programming Interface',
-      definition: 'A contract for software integration.',
-      tags: const ['software'],
-    );
-    DashronymEntry? receivedEntry;
 
     await tester.pumpWidget(
       _testHarness(
@@ -664,9 +891,7 @@ void main() {
           description: 'Application Programming Interface',
           theme: _theme(),
           textStyle: const TextStyle(),
-          entry: entry,
           tooltipBuilder: (context, details) {
-            receivedEntry = details.entry;
             return GestureDetector(
               key: tooltipKey,
               onTap: details.hideTooltip,
@@ -687,7 +912,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(tooltipKey), findsOneWidget);
-    expect(receivedEntry, same(entry));
 
     await tester.tap(find.byKey(tooltipKey));
     await tester.pumpAndSettle();

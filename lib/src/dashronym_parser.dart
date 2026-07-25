@@ -23,7 +23,7 @@ import 'dashronym_registry.dart';
 ///
 /// final spans = DashronymParser(
 ///   registry: registry,
-///   config: const DashronymConfig(enableBareAcronyms: true),
+///   config: const DashronymConfig(),
 ///   theme: const DashronymTheme(),
 ///   baseStyle: const TextStyle(fontSize: 14),
 /// ).parseToSpans('Install the (SDK) to access the API.');
@@ -96,7 +96,6 @@ class DashronymParser {
               // RichText scales WidgetSpan children at the render-object
               // boundary. Scaling this Text again would square the factor.
               textScaler: TextScaler.noScaling,
-              entry: registry.entryOf(acronym),
               locale: locale,
               spellOut: spellOut,
               semanticsIdentifier: tokenSemanticsIdentifier,

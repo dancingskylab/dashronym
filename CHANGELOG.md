@@ -1,9 +1,53 @@
 ## Unreleased
 
+### Fixed
+
+- Fixed a keyboard trap: tabbing into an open tooltip's close button no
+  longer freezes focus there. `Tab`/`Shift+Tab` now escape the tooltip and
+  continue to the next trigger, wrapping back to the first one at the end.
+
+## 0.2.0 - 2026-07-24
+
 ### Changed
 
+- Refocused the supported API on displaying acronym definitions from a simple
+  `Map<String, String>` registry.
+- Enabled registered bare uppercase acronyms by default. Set
+  `DashronymConfig(enableBareAcronyms: false)` to require marker-wrapped terms.
+- Made `package:dashronym/dashronym.dart` the single primary import for the
+  registry, configuration, text widgets, scope, theme, localization, and custom
+  tooltip builder.
+- Added value equality to `DashronymRegistry`, `DashronymConfig`, and
+  `DashronymTheme` so equivalent values created during a rebuild do not trigger
+  unnecessary inherited-widget updates or tooltip relayouts.
+- Scoped active-tooltip coordination to `DashronymScope`. Each scope permits
+  one open tooltip without interfering with independent scopes.
+- Removed the parser's ineffective per-build LRU cache and its supporting
+  implementation.
+- Limited each configuration to 16 marker pairs to keep matching work bounded.
+- Added `DashronymConfig.withMarkers` as the defensively copying API for custom
+  marker pairs; the const default constructor is now inherently immutable.
+- Reduced the example and package documentation to the core registry-first
+  workflow.
+- Updated the latest-stable CI lane to Flutter 3.44.8.
 - Removed unreliable pub.dev vanity-metric badges while retaining badges for
   CI, the published version, enforced coverage floors, and licensing.
+
+### Fixed
+
+- Honored `DashronymConfig(minLen: 1)` when matching one-character acronyms.
+- Disposed replaced tooltip animations during widget rebuilds.
+- Made Escape dismiss hover-opened tooltips without moving keyboard focus.
+
+### Removed
+
+- Removed the rich glossary entry, alias, duplicate-policy, and JSON
+  interchange APIs. Applications that need those concerns can own them and
+  provide Dashronym with a string map at the UI boundary.
+- Removed rich-entry metadata from custom tooltip details.
+- Removed `package:dashronym/dashronym_core.dart`. Import
+  `package:dashronym/dashronym.dart` for both configuration and Flutter UI
+  APIs.
 
 ## 0.1.0 - 2026-07-20
 

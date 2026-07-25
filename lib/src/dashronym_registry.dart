@@ -1,20 +1,4 @@
-import 'dart:collection';
-
-import 'dashronym_entry.dart';
-
-/// How [DashronymRegistry] resolves normalized canonical or alias collisions.
-enum DashronymDuplicatePolicy {
-  /// Reject the registry with a helpful [ArgumentError].
-  reject,
-
-  /// Keep the first complete entry and skip a later entry with any collision.
-  keepFirst,
-
-  /// Keep the later complete entry and remove every earlier conflicting entry.
-  keepLast,
-}
-
-/// A read-only registry mapping acronyms and aliases to their descriptions.
+/// A read-only registry mapping acronyms to their descriptions.
 ///
 /// Keys are normalized at construction time. When [caseInsensitive] is `true`
 /// (the default), all keys are stored uppercased and lookups normalize the
@@ -23,82 +7,51 @@ enum DashronymDuplicatePolicy {
 ///
 /// Example:
 /// ```dart
-/// final reg = DashronymRegistry({
+/// final registry = DashronymRegistry({
 ///   'SDK': 'Software Development Kit',
 ///   'api': 'Application Programming Interface',
 /// });
 ///
-/// // Case-insensitive by default:
-/// print(reg.contains('sdk')); // true
-/// print(reg.descriptionOf('Api')); // "Application Programming Interface"
+/// print(registry.contains('sdk')); // true
+/// print(registry.descriptionOf('Api'));
+/// // Application Programming Interface
 /// ```
 class DashronymRegistry {
-  /// Creates a registry from the original acronym-to-description map API.
+  /// Creates a registry from an acronym-to-description map.
   ///
   /// When [caseInsensitive] is `true`, all keys in [entries] are converted to
   /// upper case during construction. When `false`, keys are kept as-is. The
   /// entries are defensively copied, so later changes to the source map cannot
   /// affect the registry.
   ///
-  /// [duplicatePolicy] applies when distinct map keys normalize to the same
-  /// lookup key. Its default preserves the historical last-value-wins behavior.
+  /// If multiple keys normalize to the same value, the later entry wins.
   DashronymRegistry(
     Map<String, String> entries, {
     bool caseInsensitive = true,
-    DashronymDuplicatePolicy duplicatePolicy =
-        DashronymDuplicatePolicy.keepLast,
   }) : this._(
          caseInsensitive: caseInsensitive,
-         duplicatePolicy: duplicatePolicy,
-         data: _buildLegacyData(
+         entries: _normalizeEntries(
            entries.entries,
            caseInsensitive: caseInsensitive,
-           duplicatePolicy: duplicatePolicy,
          ),
        );
 
   DashronymRegistry._({
     required this.caseInsensitive,
-    required this.duplicatePolicy,
-    required _RegistryData data,
-  }) : _entries = data.descriptions,
-       _lookupTerms = data.lookupDescriptions,
-       _entryLookup = data.lookup,
-       richEntries = data.richEntries;
-
-  /// Creates a rich registry whose aliases resolve to their canonical entries.
-  ///
-  /// Duplicate handling is atomic per entry: [DashronymDuplicatePolicy.keepFirst]
-  /// skips an incoming entry if any of its lookup terms collide, while
-  /// [DashronymDuplicatePolicy.keepLast] removes complete earlier entries
-  /// involved in a collision before adding the incoming entry.
-  factory DashronymRegistry.fromEntries(
-    Iterable<DashronymEntry> entries, {
-    bool caseInsensitive = true,
-    DashronymDuplicatePolicy duplicatePolicy = DashronymDuplicatePolicy.reject,
-  }) => DashronymRegistry._(
-    caseInsensitive: caseInsensitive,
-    duplicatePolicy: duplicatePolicy,
-    data: _buildRichData(
-      entries,
-      caseInsensitive: caseInsensitive,
-      duplicatePolicy: duplicatePolicy,
-    ),
-  );
+    required Map<String, String> entries,
+  }) : _entries = Map<String, String>.unmodifiable(entries);
 
   /// Creates a registry from an iterable of acronym-description entries.
+  ///
+  /// If multiple keys normalize to the same value, the later entry wins.
   factory DashronymRegistry.fromMapEntries(
     Iterable<MapEntry<String, String>> entries, {
     bool caseInsensitive = true,
-    DashronymDuplicatePolicy duplicatePolicy =
-        DashronymDuplicatePolicy.keepLast,
   }) => DashronymRegistry._(
     caseInsensitive: caseInsensitive,
-    duplicatePolicy: duplicatePolicy,
-    data: _buildLegacyData(
+    entries: _normalizeEntries(
       entries,
       caseInsensitive: caseInsensitive,
-      duplicatePolicy: duplicatePolicy,
     ),
   );
 
@@ -108,211 +61,76 @@ class DashronymRegistry {
 
   /// Whether lookups are case-insensitive.
   ///
-  /// If `true`, [contains], [descriptionOf], and [entryOf] normalize query keys
-  /// to upper case before matching.
+  /// If `true`, [contains] and [descriptionOf] normalize query keys to upper
+  /// case before matching.
   final bool caseInsensitive;
 
-  /// The duplicate behavior used while constructing this registry.
-  final DashronymDuplicatePolicy duplicatePolicy;
-
   final Map<String, String> _entries;
-  final Map<String, String> _lookupTerms;
-  final Map<String, DashronymEntry> _entryLookup;
 
-  /// An unmodifiable map of normalized canonical acronyms and descriptions.
-  ///
-  /// Aliases are intentionally excluded to preserve the original collection
-  /// semantics. Use [lookupTerms] when every searchable term is needed.
+  /// An unmodifiable map of normalized acronyms and descriptions.
   Map<String, String> get entries => _entries;
 
-  /// An unmodifiable map of every normalized canonical and alias lookup term.
-  Map<String, String> get lookupTerms => _lookupTerms;
-
-  /// The number of canonical and alias lookup terms.
-  int get lookupTermCount => _lookupTerms.length;
-
-  /// The unique retained rich entries, in deterministic construction order.
-  ///
-  /// Alias terms appear in [lookupTerms] but do not duplicate values here.
-  final List<DashronymEntry> richEntries;
-
-  /// The number of canonical entries.
+  /// The number of entries.
   int get length => _entries.length;
 
-  /// Whether the registry has no canonical entries.
+  /// Whether the registry has no entries.
   bool get isEmpty => _entries.isEmpty;
 
-  /// Whether the registry has at least one canonical entry.
+  /// Whether the registry has at least one entry.
   bool get isNotEmpty => _entries.isNotEmpty;
 
   /// Returns whether the registry has an entry for [key].
-  bool contains(String key) => _lookupTerms.containsKey(_normalizeKey(key));
+  bool contains(String key) => _entries.containsKey(_normalizeKey(key));
 
   /// Returns whether the registry has an entry for [key].
   ///
   /// This conventional map-style alias is equivalent to [contains].
   bool containsKey(String key) => contains(key);
 
-  /// Returns the display description associated with [key], or `null`.
-  String? descriptionOf(String key) => _lookupTerms[_normalizeKey(key)];
+  /// Returns the description associated with [key], or `null`.
+  String? descriptionOf(String key) => _entries[_normalizeKey(key)];
 
-  /// Returns the rich entry associated with a canonical term or alias.
-  DashronymEntry? entryOf(String key) => _entryLookup[_normalizeKey(key)];
-
-  /// Returns the display description associated with [key], or `null`.
+  /// Returns the description associated with [key], or `null`.
   String? operator [](String key) => descriptionOf(key);
 
   String _normalizeKey(String key) =>
       _normalize(key, caseInsensitive: caseInsensitive);
 
-  static _RegistryData _buildLegacyData(
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is DashronymRegistry &&
+          other.caseInsensitive == caseInsensitive &&
+          _mapsEqual(other._entries, _entries);
+
+  @override
+  int get hashCode => Object.hash(
+    caseInsensitive,
+    Object.hashAllUnordered(
+      _entries.entries.map((entry) => Object.hash(entry.key, entry.value)),
+    ),
+  );
+
+  static Map<String, String> _normalizeEntries(
     Iterable<MapEntry<String, String>> entries, {
     required bool caseInsensitive,
-    required DashronymDuplicatePolicy duplicatePolicy,
   }) {
-    final descriptions = <String, String>{};
-    final lookup = <String, DashronymEntry>{};
-    final richEntries = <String, DashronymEntry>{};
-
+    final normalized = <String, String>{};
     for (final MapEntry(:key, :value) in entries) {
-      final normalized = _normalize(
-        key,
-        caseInsensitive: caseInsensitive,
-      );
-      if (descriptions.containsKey(normalized)) {
-        switch (duplicatePolicy) {
-          case DashronymDuplicatePolicy.reject:
-            throw ArgumentError.value(
-              key,
-              'entries',
-              'lookup term "$key" conflicts after normalization',
-            );
-          case DashronymDuplicatePolicy.keepFirst:
-            continue;
-          case DashronymDuplicatePolicy.keepLast:
-            lookup.remove(normalized);
-            richEntries.remove(normalized);
-        }
-      }
-
-      descriptions[normalized] = value;
-      try {
-        final richEntry = DashronymEntry(acronym: key, expansion: value);
-        lookup[normalized] = richEntry;
-        richEntries[normalized] = richEntry;
-      } on ArgumentError {
-        // Legacy string maps historically accept blank and whitespace values.
-        // Preserve their exact string behavior without manufacturing an
-        // invalid rich model.
-      }
+      normalized[_normalize(key, caseInsensitive: caseInsensitive)] = value;
     }
-
-    final frozenDescriptions = Map<String, String>.unmodifiable(descriptions);
-    return _RegistryData(
-      descriptions: frozenDescriptions,
-      lookupDescriptions: frozenDescriptions,
-      lookup: Map<String, DashronymEntry>.unmodifiable(lookup),
-      richEntries: List<DashronymEntry>.unmodifiable(richEntries.values),
-    );
-  }
-
-  static _RegistryData _buildRichData(
-    Iterable<DashronymEntry> source, {
-    required bool caseInsensitive,
-    required DashronymDuplicatePolicy duplicatePolicy,
-  }) {
-    final lookup = <String, DashronymEntry>{};
-    final canonicalEntries = <String, DashronymEntry>{};
-    final canonicalDescriptions = <String, String>{};
-
-    for (final entry in source) {
-      final seenTerms = <String>{};
-      final terms = <({String raw, String normalized})>[
-        for (final raw in [entry.acronym, ...entry.aliases])
-          if (seenTerms.add(
-            _normalize(raw, caseInsensitive: caseInsensitive),
-          ))
-            (
-              raw: raw,
-              normalized: _normalize(
-                raw,
-                caseInsensitive: caseInsensitive,
-              ),
-            ),
-      ];
-      final collisions = [
-        for (final term in terms)
-          if (lookup[term.normalized] case final DashronymEntry owner)
-            (term: term, owner: owner),
-      ];
-
-      if (collisions.isNotEmpty) {
-        switch (duplicatePolicy) {
-          case DashronymDuplicatePolicy.reject:
-            final collision = collisions.first;
-            throw ArgumentError.value(
-              entry.acronym,
-              'entries',
-              'lookup term "${collision.term.raw}" conflicts with '
-                  '"${collision.owner.acronym}" after normalization',
-            );
-          case DashronymDuplicatePolicy.keepFirst:
-            continue;
-          case DashronymDuplicatePolicy.keepLast:
-            final displaced = HashSet<DashronymEntry>.identity()
-              ..addAll(collisions.map((collision) => collision.owner));
-            final displacedCanonicalKeys = [
-              for (final MapEntry(:key, :value) in canonicalEntries.entries)
-                if (displaced.contains(value)) key,
-            ];
-            lookup.removeWhere(
-              (_, candidate) => displaced.contains(candidate),
-            );
-            for (final key in displacedCanonicalKeys) {
-              canonicalEntries.remove(key);
-              canonicalDescriptions.remove(key);
-            }
-        }
-      }
-
-      final canonicalKey = _normalize(
-        entry.acronym,
-        caseInsensitive: caseInsensitive,
-      );
-      canonicalEntries[canonicalKey] = entry;
-      canonicalDescriptions[canonicalKey] = entry.displayDescription;
-      for (final term in terms) {
-        lookup[term.normalized] = entry;
-      }
-    }
-
-    return _RegistryData(
-      lookup: Map<String, DashronymEntry>.unmodifiable(lookup),
-      lookupDescriptions: Map<String, String>.unmodifiable({
-        for (final MapEntry(:key, :value) in lookup.entries)
-          key: value.displayDescription,
-      }),
-      descriptions: Map<String, String>.unmodifiable(canonicalDescriptions),
-      richEntries: List<DashronymEntry>.unmodifiable(canonicalEntries.values),
-    );
+    return normalized;
   }
 
   static String _normalize(
     String key, {
     required bool caseInsensitive,
   }) => caseInsensitive ? key.toUpperCase() : key;
-}
 
-final class _RegistryData {
-  const _RegistryData({
-    required this.lookup,
-    required this.descriptions,
-    required this.lookupDescriptions,
-    required this.richEntries,
-  });
-
-  final Map<String, DashronymEntry> lookup;
-  final Map<String, String> descriptions;
-  final Map<String, String> lookupDescriptions;
-  final List<DashronymEntry> richEntries;
+  static bool _mapsEqual(
+    Map<String, String> left,
+    Map<String, String> right,
+  ) =>
+      left.length == right.length &&
+      left.entries.every((entry) => right[entry.key] == entry.value);
 }

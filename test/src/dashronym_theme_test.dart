@@ -173,6 +173,26 @@ void main() {
     );
   });
 
+  test('DashronymTheme uses value equality', () {
+    const first = DashronymTheme(
+      acronymStyle: TextStyle(color: Colors.indigo),
+      cardWidth: 280,
+      hoverHideDelay: Duration(milliseconds: 120),
+      tooltipMaxWidth: 360,
+    );
+    const equal = DashronymTheme(
+      acronymStyle: TextStyle(color: Colors.indigo),
+      cardWidth: 280,
+      hoverHideDelay: Duration(milliseconds: 120),
+      tooltipMaxWidth: 360,
+    );
+    const different = DashronymTheme(cardWidth: 281);
+
+    expect(first, equal);
+    expect(first.hashCode, equal.hashCode);
+    expect(first, isNot(different));
+  });
+
   test('DashronymTheme.lerp interpolates animatable values', () {
     const begin = DashronymTheme(
       cardWidth: 200,
