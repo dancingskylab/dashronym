@@ -1,20 +1,17 @@
 import 'package:dashronym/dashronym.dart';
 import 'package:flutter/material.dart';
 
-void main() {
-  final acronyms = DashronymRegistry({
-    'API': 'Application Programming Interface',
-    'CLI': 'Command Line Interface',
-    'SDK': 'Software Development Kit',
-    'UI': 'User Interface',
-  });
-  runApp(GlossaryApp(registry: acronyms));
-}
+final acronyms = DashronymRegistry({
+  'API': 'Application Programming Interface',
+  'CLI': 'Command Line Interface',
+  'SDK': 'Software Development Kit',
+  'UI': 'User Interface',
+});
 
-class GlossaryApp extends StatelessWidget {
-  const GlossaryApp({super.key, required this.registry});
+void main() => runApp(const DashronymExampleApp());
 
-  final DashronymRegistry registry;
+class DashronymExampleApp extends StatelessWidget {
+  const DashronymExampleApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -32,72 +29,163 @@ class GlossaryApp extends StatelessWidget {
         ],
       ),
       home: DashronymScope(
-        registry: registry,
-        child: const GlossaryPage(),
+        registry: acronyms,
+        child: const ReleaseNotesPage(),
       ),
     );
   }
 }
 
-class GlossaryPage extends StatelessWidget {
-  const GlossaryPage({super.key});
+class ReleaseNotesPage extends StatelessWidget {
+  const ReleaseNotesPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colors = Theme.of(context).colorScheme;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Dashronym')),
+      appBar: AppBar(title: const Text('Dashronym example')),
       body: SelectionArea(
         child: ListView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
           children: [
             Text(
-              'Dashronym adds definitions for terms such as SDK and API '
-              'without changing how you write ordinary Flutter text.',
-              style: Theme.of(context).textTheme.bodyLarge,
-            ).dashronyms(),
-            const SizedBox(height: 24),
-            Text.rich(
-              TextSpan(
-                children: [
-                  const TextSpan(text: 'It also works with '),
-                  TextSpan(
-                    text: 'rich text',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const TextSpan(text: ' used in your UI.'),
-                ],
+              'Tap an underlined term for its definition.',
+              style: textTheme.labelLarge?.copyWith(
+                color: colors.onSurfaceVariant,
               ),
-            ).dashronyms(),
-            const SizedBox(height: 24),
-            const DashronymText(
-              'Marker-wrapped terms work too: try the (CLI).',
             ),
-            const SizedBox(height: 32),
-            Text(
-              'Custom definition card',
-              style: Theme.of(context).textTheme.titleLarge,
+            const SizedBox(height: 16),
+            _Section(
+              title: "What's new",
+              child: Text(
+                'Version 4.2 rebuilds sync on top of our new SDK and talks '
+                'directly to the same API that powers the UI you use every '
+                'day.',
+                style: textTheme.bodyLarge,
+              ).dashronyms(),
             ),
-            const SizedBox(height: 8),
-            DashronymText(
-              'Tap API to open an application-owned surface.',
-              tooltipBuilder: (context, details) => Semantics(
-                container: true,
-                label: 'Definition for ${details.acronym}',
-                child: Card(
-                  margin: EdgeInsets.zero,
-                  child: ListTile(
-                    title: Text(details.acronym),
-                    subtitle: Text(details.description),
-                    trailing: IconButton(
-                      tooltip: 'Close definition',
-                      onPressed: details.hideTooltip,
-                      icon: const Icon(Icons.close),
+            _Section(
+              title: 'Rich text stays rich',
+              child: Text.rich(
+                TextSpan(
+                  style: textTheme.bodyLarge,
+                  children: const [
+                    TextSpan(text: 'The '),
+                    TextSpan(
+                      text: 'SDK',
+                      style: TextStyle(fontWeight: FontWeight.w700),
                     ),
-                  ),
+                    TextSpan(
+                      text:
+                          ' now retries failed requests before they ever '
+                          'reach your ',
+                    ),
+                    TextSpan(
+                      text: 'UI',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    TextSpan(text: '.'),
+                  ],
                 ),
+              ).dashronyms(),
+            ),
+            _Section(
+              title: 'Marker-wrapped terms',
+              child: const DashronymText(
+                'Prefer the terminal? The same release ships from the (CLI).',
+              ),
+            ),
+            _Section(
+              title: 'Bring your own tooltip',
+              child: DashronymText(
+                'Something look wrong? Check the API status page first.',
+                tooltipBuilder: (context, details) =>
+                    _SupportTooltip(details: details),
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Section extends StatelessWidget {
+  const _Section({required this.title, required this.child});
+
+  final String title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Card(
+        margin: EdgeInsets.zero,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              child,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SupportTooltip extends StatelessWidget {
+  const _SupportTooltip({required this.details});
+
+  final DashronymTooltipDetails details;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Semantics(
+      container: true,
+      label: 'Definition for ${details.acronym}',
+      child: Material(
+        color: colors.primaryContainer,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.support_agent, color: colors.onPrimaryContainer),
+                  const SizedBox(width: 8),
+                  Text(
+                    details.acronym,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: colors.onPrimaryContainer,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    tooltip: 'Close definition',
+                    onPressed: details.hideTooltip,
+                    icon: Icon(Icons.close, color: colors.onPrimaryContainer),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                details.description,
+                style: TextStyle(color: colors.onPrimaryContainer),
+              ),
+            ],
+          ),
         ),
       ),
     );
