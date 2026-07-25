@@ -21,9 +21,6 @@ Dashronym `0.2.x` requires:
 ```yaml
 dependencies:
   dashronym: ^0.2.0
-
-flutter:
-  uses-material-design: true
 ```
 
 Then run `flutter pub get` and import the package:
@@ -34,20 +31,14 @@ import 'package:dashronym/dashronym.dart';
 
 ## Quick start
 
-Inject a registry into the widget that displays acronym-aware text:
-
 ```dart
-Widget buildOverview() => Overview(
-  acronyms: DashronymRegistry({
-    'API': 'Application Programming Interface',
-    'SDK': 'Software Development Kit',
-  }),
-);
+final acronyms = DashronymRegistry({
+  'API': 'Application Programming Interface',
+  'SDK': 'Software Development Kit',
+});
 
 class Overview extends StatelessWidget {
-  const Overview({super.key, required this.acronyms});
-
-  final DashronymRegistry acronyms;
+  const Overview({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -191,26 +182,25 @@ DashronymText(
 )
 ```
 
-Dashronym still owns the overlay positioning, viewport constraints, focus, and
-dismissal behavior. The builder owns its content, labels, reading order, and
-control semantics.
+Dashronym still handles overlay positioning, viewport constraints, focus, and
+dismissal. Your builder just owns the content.
 
 ## Accessibility and interaction
 
-Matched terms are keyboard-focusable controls:
+Matched terms are keyboard-focusable controls.
 
-- tap, click, Enter, or Space opens or toggles a definition;
-- Escape, outside activation, scrolling, or a viewport change dismisses it;
-- focus can move into custom tooltip controls and returns to the trigger after
-  a close action;
-- at most one tooltip is open per `DashronymScope`, while independent scopes
-  remain independent;
-- tooltip surfaces are constrained to the usable viewport; and
-- definition state and content are exposed to assistive technologies.
+- Tap, click, Enter, or Space opens or toggles a definition.
+- Escape, an outside tap, scrolling, or a viewport change dismisses it.
+- Focus can move into custom tooltip controls and returns to the trigger
+  after closing.
+- At most one tooltip is open per `DashronymScope`; independent scopes don't
+  interfere with each other.
+- Tooltip surfaces stay within the visible viewport.
+- Definition state and content are exposed to assistive technologies.
 
-Custom tooltip builders should keep controls keyboard reachable, provide clear
-labels, and call `details.hideTooltip` for close actions. Manual testing with
-the assistive technologies on each target platform remains important.
+Custom builders should keep their controls keyboard-reachable, label them
+clearly, and call `details.hideTooltip` to close. Test with real assistive
+tech, not just automated checks.
 
 ## Localization
 
@@ -231,7 +221,6 @@ back safely for other locales.
 
 - [Example application](example/main.dart)
 - [Migration guide](MIGRATION.md)
-- [Roadmap](docs/ROADMAP.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
 
