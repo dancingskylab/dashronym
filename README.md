@@ -5,234 +5,123 @@
 [![coverage gate](https://img.shields.io/badge/coverage-%E2%89%A595%25%20lines%20%7C%20%E2%89%A585%25%20branches-brightgreen)](https://github.com/dancingskylab/dashronym/actions/workflows/ci.yml)
 [![license](https://img.shields.io/github/license/dancingskylab/dashronym)](LICENSE)
 
-Dashronym turns known acronyms inside Flutter text into accessible inline
-controls with viewport-safe definition tooltips. It supports simple maps,
-rich glossary entries and aliases, shared app-level configuration, existing
-rich-text trees, and a versioned JSON interchange format.
-
-The package is local-first: rendering a glossary does not require an account,
-network connection, telemetry, or a hosted Dashronym service.
-
-## Highlights
-
-- Add glossary behavior to a `Text` with `.dashronyms()` or use
-  `DashronymText` directly.
-- Share a registry, parser configuration, theme, and tooltip builder through
-  `DashronymScope`.
-- Install `DashronymTheme` as a Flutter `ThemeExtension`.
-- Keep nested `TextSpan` styling, locale metadata, existing `WidgetSpan`s,
-  layout options, selection, directionality, text scaling, and recognizers on
-  unmatched text; matched terms intentionally become glossary controls.
-- Use immutable `DashronymEntry` values with expansions, longer definitions,
-  aliases, tags, sources, and JSON-safe metadata.
-- Import and export deterministic, versioned `DashronymGlossary` JSON.
-- Resolve alias collisions with explicit reject, keep-first, or keep-last
-  policies.
-- Support touch, mouse, keyboard, screen readers, RTL layouts, compact
-  viewports, visible keyboards, and long definitions.
-- Replace the tooltip surface while retaining Dashronym's overlay, focus,
-  dismissal, and viewport constraints.
+Dashronym turns acronyms in Flutter text into accessible inline definition
+tooltips. Give it a map of terms and descriptions, then use it with an existing
+`Text` or with `DashronymText`.
 
 ## Requirements
 
-Dashronym `0.1.0` requires:
+Dashronym `0.2.x` requires:
 
 - Dart `>=3.10.0 <4.0.0`
 - Flutter `>=3.38.1`
 
-CI validates the exact minimum and the latest supported stable Flutter release.
-See the [migration guide](MIGRATION.md) before upgrading from `0.0.x`.
-
 ## Installation
-
-Add Dashronym to your Flutter application:
 
 ```yaml
 dependencies:
-  dashronym: ^0.1.0
+  dashronym: ^0.2.0
+
+flutter:
+  uses-material-design: true
 ```
 
-Then run:
+Then run `flutter pub get` and import the package:
 
-```sh
-flutter pub get
+```dart
+import 'package:dashronym/dashronym.dart';
 ```
 
 ## Quick start
 
-For one text widget, pass a registry directly:
+Inject a registry into the widget that displays acronym-aware text:
 
 ```dart
-import 'package:dashronym/dashronym.dart';
-import 'package:flutter/material.dart';
-
-final registry = DashronymRegistry({
-  'SDK': 'Software Development Kit',
-  'API': 'Application Programming Interface',
-});
+Widget buildOverview() => Overview(
+  acronyms: DashronymRegistry({
+    'API': 'Application Programming Interface',
+    'SDK': 'Software Development Kit',
+  }),
+);
 
 class Overview extends StatelessWidget {
-  const Overview({super.key});
+  const Overview({super.key, required this.acronyms});
+
+  final DashronymRegistry acronyms;
 
   @override
   Widget build(BuildContext context) {
     return const Text(
-      'Our SDK exposes a lightweight API.',
-    ).dashronyms(
-      registry: registry,
-      config: const DashronymConfig(enableBareAcronyms: true),
-    );
+      'The SDK provides an API for your application.',
+    ).dashronyms(registry: acronyms);
   }
 }
 ```
 
-Marker-wrapped terms work without enabling bare matching:
+Registered uppercase acronyms containing 2–10 ASCII letters match in ordinary
+text by default. Only terms in the registry become interactive. Change the
+length bounds with `DashronymConfig` when needed.
+
+`DashronymText` provides the same behavior directly:
 
 ```dart
 DashronymText(
-  'Install the (SDK) before using the (API).',
-  registry: registry,
+  'The SDK provides an API for your application.',
+  registry: acronyms,
 )
 ```
 
-Only terms present in the registry become interactive.
+## Share a registry
 
-## Share one glossary across a subtree
-
-Use `DashronymScope` when a feature or application uses the same glossary in
-several places:
+Use `DashronymScope` when several widgets use the same definitions:
 
 ```dart
 DashronymScope(
-  registry: registry,
-  config: const DashronymConfig(enableBareAcronyms: true),
+  registry: acronyms,
   child: const Article(),
 )
 ```
 
-Descendants can omit the shared values:
+Widgets below the scope can omit the registry:
 
 ```dart
-const Text('The SDK calls the API.').dashronyms()
+const Text('Install the SDK first.').dashronyms()
 
-const DashronymText('The API is also available from the CLI.')
+const DashronymText('Then call the API.')
 ```
 
-Resolution precedence is:
+Explicit widget arguments override values inherited from the nearest scope.
+At most one tooltip is open within a `DashronymScope`; independent scopes
+coordinate their tooltips separately and do not interfere with each other.
 
-1. an explicit widget or extension argument;
-2. the nearest `DashronymScope`;
-3. a `DashronymTheme` in `ThemeData.extensions` for visual configuration; and
-4. package defaults.
+## Matching
 
-Omitting a registry without a surrounding scope produces a focused
-`FlutterError` explaining both valid setup options.
+Bare uppercase acronyms are enabled by default. Marker-wrapped terms such as
+`(API)`, `'API'`, and `"API"` are also supported.
 
-## Rich entries, aliases, and portable JSON
-
-Use `DashronymEntry` when a definition needs more structure than a single
-description string:
+To require markers, disable bare matching:
 
 ```dart
-final glossary = DashronymGlossary(
-  name: 'Software basics',
-  id: 'com.example.software-basics',
-  version: '2026.07.1',
-  locale: 'en-CA',
-  license: 'LicenseRef-Example',
-  entries: [
-    DashronymEntry(
-      acronym: 'API',
-      expansion: 'Application Programming Interface',
-      definition: 'A defined interface used by software components.',
-      aliases: const ['APIS'],
-      tags: const ['software', 'integration'],
-      source: 'https://example.com/editorial-method',
-      metadata: const {
-        'entryId': 'software.api',
-        'status': 'reviewed',
-      },
-    ),
-  ],
-);
-
-final registry = glossary.toRegistry();
-
-registry.descriptionOf('apis');
-// Application Programming Interface — A defined interface used by
-// software components.
-
-registry.entryOf('APIS')?.source;
-// https://example.com/editorial-method
+DashronymScope(
+  registry: acronyms,
+  config: const DashronymConfig(enableBareAcronyms: false),
+  child: const Article(),
+)
 ```
 
-Decode or encode the same model at an application boundary:
+`DashronymConfig` also controls the accepted marker pairs and minimum and
+maximum term lengths. Use its copying factory for custom markers:
 
 ```dart
-final glossary = DashronymGlossary.fromJsonString(encodedJson);
-final prettyJson = glossary.toJsonString(pretty: true);
-```
-
-The decoder is intentionally strict. Unknown fields, unsupported schema
-versions, malformed timestamps, invalid metadata, and duplicate aliases fail
-with descriptive errors. Put application-specific JSON values in `metadata`.
-When the document is converted with `toRegistry()`, its default duplicate
-policy also rejects normalized canonical/alias collisions across entries.
-
-The authoritative version-1 contract is
-[`schema/v1/dashronym-glossary.schema.json`](schema/v1/dashronym-glossary.schema.json).
-
-### Core entry point
-
-Flutter-SDK projects can import the model and registry layer without importing
-Flutter APIs:
-
-```dart
-import 'package:dashronym/dashronym_core.dart';
-```
-
-That library's import graph is pure Dart, but the current `dashronym` package
-still declares an SDK dependency on Flutter. A Dart-only project that does not
-install Flutter cannot consume this package yet. Publishing a separately
-versioned core package is tracked under
-[portable Dart runtime priorities](https://github.com/dancingskylab/dashronym/blob/main/docs/ROADMAP.md#portable-dart-runtime)
-before non-Flutter integrations.
-
-## Matching behavior
-
-`DashronymConfig` has two matching modes:
-
-- Marker matching is enabled by default. The default pairs recognize `(API)`,
-  `'API'`, and `"API"`. A registered marker-wrapped term can contain
-  punctuation or mixed case, so `(C++)`, `(.NET)`, `(R&D)`, and `(OAuth)` are
-  supported within the configured Unicode-scalar length bounds.
-- Bare matching is opt-in with `enableBareAcronyms: true` and recognizes known
-  all-uppercase terms within `minLen` and `maxLen`.
-
-Registries are case-insensitive by default, so a marker such as `(api)` can
-resolve an `API` entry. Pass `caseInsensitive: false` when case is meaningful.
-
-Rich registries reject normalized canonical or alias collisions by default:
-
-```dart
-final registry = DashronymRegistry.fromEntries(
-  glossary.entries,
-  duplicatePolicy: DashronymDuplicatePolicy.reject,
+final config = DashronymConfig.withMarkers(
+  acceptMarkers: const ['()', '«»'],
 );
 ```
 
-Use `keepFirst` or `keepLast` only when the import workflow has an intentional,
-documented precedence rule.
+## Rich text
 
-Punctuation-aware *bare* terms, escaping, and broader Unicode-aware unmarked
-matching policies require explicit future APIs rather than silent changes to
-legacy matching. See the
-[matching priorities](https://github.com/dancingskylab/dashronym/blob/main/docs/ROADMAP.md#matching-and-schema).
-
-## Existing rich text
-
-`Text.rich(...).dashronyms()` recursively processes text inside nested
-`TextSpan`s:
+The extension also works with `Text.rich` and keeps the surrounding span
+styles:
 
 ```dart
 Text.rich(
@@ -243,38 +132,19 @@ Text.rich(
         text: 'SDK',
         style: Theme.of(context).textTheme.labelLarge,
       ),
-      const TextSpan(text: ' from your IDE.'),
+      const TextSpan(text: ' to call the API.'),
     ],
   ),
-).dashronyms(
-  registry: registry,
-  config: const DashronymConfig(enableBareAcronyms: true),
-)
+).dashronyms(registry: acronyms)
 ```
 
-Existing `WidgetSpan`s are preserved. A `TextSpan` with an explicit
-`semanticsLabel` is treated as an author-controlled accessibility boundary and
-is left unchanged. Use `DashronymText.rich` when constructing the
-glossary-aware tree directly.
+Existing `WidgetSpan`s are preserved. A `TextSpan` with its own
+`semanticsLabel` remains an author-controlled accessibility boundary.
 
-## Theming
+## Theme
 
-Pass a theme locally:
-
-```dart
-DashronymText(
-  'Tap (API) for its definition.',
-  registry: registry,
-  theme: DashronymTheme(
-    decorationStyle: TextDecorationStyle.dashed,
-    cardWidth: 360,
-    tooltipMaxWidth: 420,
-    hoverShowDelay: Duration(milliseconds: 120),
-  ),
-)
-```
-
-Or install an app-level theme extension:
+Pass a `DashronymTheme` to one widget or install it as a Flutter theme
+extension:
 
 ```dart
 MaterialApp(
@@ -283,34 +153,33 @@ MaterialApp(
       DashronymTheme(
         acronymStyle: TextStyle(color: Colors.indigo),
         cardElevation: 10,
+        tooltipMaxWidth: 360,
       ),
     ],
   ),
-  home: const HomePage(),
+  home: DashronymScope(
+    registry: acronyms,
+    child: const Article(),
+  ),
 )
 ```
 
-`DashronymTheme.copyWith` uses `clear…` flags for nullable settings (for
-example, `clearTooltipMaxWidth: true`), and `lerp` participates in animated
-Flutter theme transitions.
+A theme passed directly to `DashronymText`, `Text.dashronyms()`, or
+`DashronymScope` takes precedence over the app theme.
 
 ## Custom tooltip content
 
-`tooltipBuilder` receives the visible term, display description, effective
-theme, close callback, and the rich entry when one exists:
+Use `tooltipBuilder` when the definition needs an application-owned surface:
 
 ```dart
 DashronymText(
-  'Review the (API).',
-  registry: registry,
+  'Review the API.',
+  registry: acronyms,
   tooltipBuilder: (context, details) {
-    final entry = details.entry;
-
-    return Material(
-      borderRadius: BorderRadius.circular(12),
+    return Card(
       child: ListTile(
-        title: Text(entry?.expansion ?? details.acronym),
-        subtitle: Text(entry?.definition ?? details.description),
+        title: Text(details.acronym),
+        subtitle: Text(details.description),
         trailing: IconButton(
           tooltip: 'Close definition',
           onPressed: details.hideTooltip,
@@ -322,68 +191,48 @@ DashronymText(
 )
 ```
 
-Dashronym constrains custom surfaces to the usable viewport and makes oversized
-content scrollable. The builder still owns the content's labels, reading order,
-and control semantics.
+Dashronym still owns the overlay positioning, viewport constraints, focus, and
+dismissal behavior. The builder owns its content, labels, reading order, and
+control semantics.
 
-## Accessibility and interaction contract
+## Accessibility and interaction
 
-Inline terms expose a button role, expanded/collapsed state, and a dynamic
-show/hide hint.
+Matched terms are keyboard-focusable controls:
 
-- Tap, click, Enter, or Space opens or toggles a definition.
-- Keyboard focus opens a definition; Escape dismisses it.
-- Focus can move into tooltip controls and is restored to the trigger after a
-  close action.
-- Hover can move from the trigger into the tooltip without closing it.
-- Outside activation, scrolling, resizing, or orientation changes dismiss a
-  stale surface.
-- At most one Dashronym tooltip is active at a time.
-- Supported platforms receive the complete definition through one
-  capability-appropriate announcement path, so opening a tooltip does not
-  produce duplicate or content-free announcements.
-- The trigger keeps the surrounding text scale, locale, direction, baseline,
-  style, and selection behavior. Tooltip text retains the effective scale
-  without applying it twice to inline widgets.
-- Stock and custom surfaces share safe-area, keyboard-inset, width, and height
-  constraints. Long stock definitions remain scrollable.
+- tap, click, Enter, or Space opens or toggles a definition;
+- Escape, outside activation, scrolling, or a viewport change dismisses it;
+- focus can move into custom tooltip controls and returns to the trigger after
+  a close action;
+- at most one tooltip is open per `DashronymScope`, while independent scopes
+  remain independent;
+- tooltip surfaces are constrained to the usable viewport; and
+- definition state and content are exposed to assistive technologies.
 
-Automated tests cover these behaviors, but assistive-technology checks on each
-target platform remain part of the release process. See
-[CONTRIBUTING.md](CONTRIBUTING.md) for the manual matrix.
+Custom tooltip builders should keep controls keyboard reachable, provide clear
+labels, and call `details.hideTooltip` for close actions. Manual testing with
+the assistive technologies on each target platform remains important.
 
 ## Localization
 
-Dashronym includes English strings and falls back safely when its delegate is
-not installed. Applications that configure Flutter localization can add:
+Dashronym includes English strings and safely falls back to English when its
+delegate is not installed. Apps that configure Flutter localization can add:
 
 ```dart
 localizationsDelegates: const [
   DashronymLocalizations.delegate,
-  // GlobalMaterialLocalizations.delegate,
-  // GlobalWidgetsLocalizations.delegate,
-  // GlobalCupertinoLocalizations.delegate,
+  // Keep your app's existing Flutter and application delegates here.
 ],
-supportedLocales: DashronymLocalizations.supportedLocales,
 ```
 
-## Project resources
+Keep the app's existing `supportedLocales`; Dashronym's English strings fall
+back safely for other locales.
 
+## Resources
+
+- [Example application](example/main.dart)
 - [Migration guide](MIGRATION.md)
-- [Roadmap](https://github.com/dancingskylab/dashronym/blob/main/docs/ROADMAP.md)
+- [Roadmap](docs/ROADMAP.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
-- [Release process](RELEASING.md)
-- [Example application](example/main.dart)
-
-Issues and feature proposals belong in the
-[GitHub tracker](https://github.com/dancingskylab/dashronym/issues).
-
-When a visual change is intentional, inspect and regenerate the inline goldens
-on macOS, the canonical golden renderer, with:
-
-```sh
-flutter test --update-goldens test/src/dashronym_inline_golden_test.dart
-```
 
 Dashronym is available under the [BSD 3-Clause License](LICENSE).

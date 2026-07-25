@@ -95,8 +95,8 @@ Dashronym is pre-1.0, but users still deserve predictable upgrades.
 - Update `README.md`, `CHANGELOG.md`, and `MIGRATION.md` with any public API,
   behavior, SDK-floor, semantics, or visual change.
 - Include old and new code in `MIGRATION.md` for a breaking change.
-- Avoid exposing mutable collections. Define equality, serialization, and
-  locale/case behavior explicitly for new glossary models.
+- Avoid exposing mutable collections. Define equality, immutability, and
+  locale/case behavior explicitly for new value types.
 
 ## Accessibility and interaction
 

@@ -452,6 +452,45 @@ class DashronymTheme extends ThemeExtension<DashronymTheme> {
     );
   }
 
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is DashronymTheme && other._properties == _properties;
+
+  @override
+  int get hashCode => _properties.hashCode;
+
+  Object get _properties => (
+    underline,
+    decorationStyle,
+    decorationThickness,
+    acronymStyle,
+    cardWidth,
+    cardElevation,
+    cardPadding,
+    hoverShowDelay,
+    hoverHideDelay,
+    tooltipFadeDuration,
+    enableHover,
+    cardBorderRadius,
+    cardIcon,
+    cardCloseIcon,
+    cardIconColor,
+    cardTitleStyle,
+    cardSubtitleStyle,
+    cardContentPadding,
+    cardMinLeadingWidth,
+    tooltipOffset,
+    tooltipFadeInCurve,
+    tooltipFadeOutCurve,
+    tooltipScaleInCurve,
+    tooltipScaleOutCurve,
+    tooltipScaleBegin,
+    tooltipScaleEnd,
+    tooltipMinWidth,
+    tooltipMaxWidth,
+  );
+
   static T _select<T>(T begin, T end, double t) => t < 0.5 ? begin : end;
 
   static double? _lerpNullableDouble(double? begin, double? end, double t) {

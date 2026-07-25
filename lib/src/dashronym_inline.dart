@@ -38,12 +38,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 
-import 'dashronym_entry.dart';
 import 'dashronym_localizations.dart';
 import 'dashronym_theme.dart';
 import 'dashronym_tooltip_card.dart';
-import 'dashronym_tooltip_positioner.dart';
-import 'dashronym_tooltip_constraints.dart';
+import 'dashronym_tooltip_controller.dart';
+import 'dashronym_tooltip_interaction.dart';
+import 'dashronym_tooltip_overlay.dart';
 
 /// Signature used to build custom tooltip content for `DashronymText`.
 ///
@@ -90,7 +90,6 @@ class DashronymTooltipDetails {
     required this.description,
     required this.theme,
     required this.hideTooltip,
-    this.entry,
   });
 
   /// The acronym shown by the inline trigger.
@@ -104,12 +103,6 @@ class DashronymTooltipDetails {
 
   /// Callback that hides the tooltip overlay.
   final VoidCallback hideTooltip;
-
-  /// Rich glossary metadata for [acronym], when available.
-  ///
-  /// Legacy registries with values that cannot form a valid [DashronymEntry]
-  /// leave this `null`.
-  final DashronymEntry? entry;
 }
 
 /// An inline, tappable acronym that shows an accessible tooltip card.
@@ -170,7 +163,6 @@ class DashronymInline extends StatefulWidget {
     required this.textStyle,
     this.tooltipBuilder,
     this.textScaler,
-    this.entry,
     this.locale,
     this.spellOut,
     this.semanticsIdentifier,
@@ -204,10 +196,6 @@ class DashronymInline extends StatefulWidget {
   @internal
   final TextScaler? textScaler;
 
-  /// Rich glossary metadata associated with [acronym], when available.
-  @internal
-  final DashronymEntry? entry;
-
   /// Locale inherited from the authored source span, when present.
   @internal
   final Locale? locale;
@@ -230,45 +218,43 @@ class DashronymInline extends StatefulWidget {
 
 class _DashronymInlineState extends State<DashronymInline>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
-  static _DashronymInlineState? _activeTooltip;
-
-  final FocusNode _focusNode = FocusNode(debugLabel: 'DashronymInline');
-  final FocusScopeNode _tooltipFocusScope = FocusScopeNode(
-    debugLabel: 'DashronymTooltip',
-  );
   final OverlayPortalController _portalController = OverlayPortalController(
     debugLabel: 'DashronymTooltip',
   );
 
-  bool _hoveringTrigger = false;
-  bool _hoveringTooltip = false;
   bool _tooltipVisible = false;
   bool _showFocusHighlight = false;
-  bool _suppressFocusShow = false;
-  Timer? _hoverShowTimer;
-  Timer? _hoverHideTimer;
   Timer? _announceDebounce;
   ScrollPosition? _scrollPosition;
-  late Duration _hoverHideDelay;
+  DashronymTooltipController? _tooltipController;
+  late final DashronymTooltipInteraction _interaction;
   late final AnimationController _fadeController;
-  late Animation<double> _opacity;
+  late CurvedAnimation _opacity;
+  late CurvedAnimation _scaleCurve;
   late Animation<double> _scale;
+  late final KeyEventCallback _keyHandler = _handleHardwareKey;
+  bool _keyboardHandlerRegistered = false;
   bool _isDisposing = false;
   int _visibilityGeneration = 0;
   Orientation? _lastOrientation;
-
-  static const double _viewportMargin = 8.0;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _hoverHideDelay =
-        widget.theme.hoverHideDelay ?? widget.theme.hoverShowDelay;
+    _interaction = DashronymTooltipInteraction(
+      showTooltip: _show,
+      hideTooltip: _hide,
+      isAlive: () => mounted && !_isDisposing,
+      hoverShowDelay: widget.theme.hoverShowDelay,
+      hoverHideDelay:
+          widget.theme.hoverHideDelay ?? widget.theme.hoverShowDelay,
+    );
     _fadeController = AnimationController(
       vsync: this,
       duration: widget.theme.tooltipFadeDuration,
       value: 0,
+      debugLabel: 'DashronymTooltip',
     );
     _configureAnimations(widget.theme);
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -281,17 +267,15 @@ class _DashronymInlineState extends State<DashronymInline>
   void dispose() {
     _isDisposing = true;
     _visibilityGeneration++;
-    _hoverShowTimer?.cancel();
-    _hoverHideTimer?.cancel();
     _announceDebounce?.cancel();
     _scrollPosition?.removeListener(_handleScrollDismiss);
     _scrollPosition = null;
     _hide(immediate: true, announce: false);
-    if (identical(_activeTooltip, this)) {
-      _activeTooltip = null;
-    }
-    _focusNode.dispose();
-    _tooltipFocusScope.dispose();
+    _tooltipController?.release(this);
+    _tooltipController = null;
+    _unregisterKeyboardHandler();
+    _interaction.dispose();
+    _disposeAnimations();
     _fadeController.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -300,20 +284,27 @@ class _DashronymInlineState extends State<DashronymInline>
   @visibleForTesting
   void debugRemoveEntry() {
     _visibilityGeneration++;
+    _unregisterKeyboardHandler();
     _portalController.hide();
     _tooltipVisible = false;
+    _tooltipController?.release(this);
   }
 
   @override
   void didUpdateWidget(covariant DashronymInline oldWidget) {
     super.didUpdateWidget(oldWidget);
-    _hoverHideDelay =
-        widget.theme.hoverHideDelay ?? widget.theme.hoverShowDelay;
+    _interaction.updateHoverDelays(
+      showDelay: widget.theme.hoverShowDelay,
+      hideDelay: widget.theme.hoverHideDelay ?? widget.theme.hoverShowDelay,
+    );
     if (oldWidget.theme.tooltipFadeDuration !=
         widget.theme.tooltipFadeDuration) {
       _fadeController.duration = widget.theme.tooltipFadeDuration;
     }
-    _configureAnimations(widget.theme);
+    if (_animationSettingsChanged(oldWidget.theme, widget.theme)) {
+      _disposeAnimations();
+      _configureAnimations(widget.theme);
+    }
   }
 
   @override
@@ -331,6 +322,16 @@ class _DashronymInlineState extends State<DashronymInline>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    final nextTooltipController = DashronymTooltipScope.maybeControllerOf(
+      context,
+    );
+    if (!identical(_tooltipController, nextTooltipController)) {
+      if (_tooltipVisible || _portalController.isShowing) {
+        _hide(immediate: true, announce: false);
+      }
+      _tooltipController?.release(this);
+      _tooltipController = nextTooltipController;
+    }
     final orientation = MediaQuery.maybeOf(context)?.orientation;
     if (orientation != null && _lastOrientation != orientation) {
       if (_lastOrientation != null) {
@@ -375,17 +376,54 @@ class _DashronymInlineState extends State<DashronymInline>
       curve: theme.tooltipFadeInCurve,
       reverseCurve: theme.tooltipFadeOutCurve,
     );
-    _scale =
-        Tween<double>(
-          begin: theme.tooltipScaleBegin,
-          end: theme.tooltipScaleEnd,
-        ).animate(
-          CurvedAnimation(
-            parent: _fadeController,
-            curve: theme.tooltipScaleInCurve,
-            reverseCurve: theme.tooltipScaleOutCurve,
-          ),
-        );
+    _scaleCurve = CurvedAnimation(
+      parent: _fadeController,
+      curve: theme.tooltipScaleInCurve,
+      reverseCurve: theme.tooltipScaleOutCurve,
+    );
+    _scale = Tween<double>(
+      begin: theme.tooltipScaleBegin,
+      end: theme.tooltipScaleEnd,
+    ).animate(_scaleCurve);
+  }
+
+  void _disposeAnimations() {
+    _opacity.dispose();
+    _scaleCurve.dispose();
+  }
+
+  bool _animationSettingsChanged(
+    DashronymTheme previous,
+    DashronymTheme next,
+  ) {
+    return previous.tooltipFadeInCurve != next.tooltipFadeInCurve ||
+        previous.tooltipFadeOutCurve != next.tooltipFadeOutCurve ||
+        previous.tooltipScaleInCurve != next.tooltipScaleInCurve ||
+        previous.tooltipScaleOutCurve != next.tooltipScaleOutCurve ||
+        previous.tooltipScaleBegin != next.tooltipScaleBegin ||
+        previous.tooltipScaleEnd != next.tooltipScaleEnd;
+  }
+
+  bool _handleHardwareKey(KeyEvent event) {
+    if (event is! KeyDownEvent ||
+        event.logicalKey != LogicalKeyboardKey.escape ||
+        !_tooltipVisible) {
+      return false;
+    }
+    _hide(restoreFocus: _interaction.tooltipFocusScope.hasFocus);
+    return true;
+  }
+
+  void _registerKeyboardHandler() {
+    if (_keyboardHandlerRegistered) return;
+    HardwareKeyboard.instance.addHandler(_keyHandler);
+    _keyboardHandlerRegistered = true;
+  }
+
+  void _unregisterKeyboardHandler() {
+    if (!_keyboardHandlerRegistered) return;
+    HardwareKeyboard.instance.removeHandler(_keyHandler);
+    _keyboardHandlerRegistered = false;
   }
 
   void _announce(String message) {
@@ -427,19 +465,19 @@ class _DashronymInlineState extends State<DashronymInline>
 
   void _show() {
     if (_tooltipVisible || _isDisposing) return;
-    _hoverShowTimer?.cancel();
-    _hoverHideTimer?.cancel();
+    _interaction.cancelPending();
 
     final strings = DashronymLocalizations.of(context);
 
-    if (_activeTooltip != this) {
-      _activeTooltip?._hide(immediate: true, announce: false);
-    }
-    _activeTooltip = this;
+    _tooltipController?.activate(
+      this,
+      () => _hide(immediate: true, announce: false),
+    );
     _visibilityGeneration++;
     setState(() {
       _tooltipVisible = true;
     });
+    _registerKeyboardHandler();
     _portalController.show();
     _fadeController.forward();
 
@@ -456,12 +494,12 @@ class _DashronymInlineState extends State<DashronymInline>
     bool announce = true,
     bool restoreFocus = false,
   }) {
-    _hoverShowTimer?.cancel();
-    _hoverHideTimer?.cancel();
+    _interaction.cancelPending();
     _announceDebounce?.cancel();
+    _unregisterKeyboardHandler();
     if (!_tooltipVisible && !_portalController.isShowing) {
       if (restoreFocus) {
-        _restoreTriggerFocus();
+        _interaction.restoreTriggerFocus();
       }
       return;
     }
@@ -476,12 +514,8 @@ class _DashronymInlineState extends State<DashronymInline>
       if (_portalController.isShowing) {
         _portalController.hide();
       }
-      if (identical(_activeTooltip, this)) {
-        _activeTooltip = null;
-      }
+      _tooltipController?.release(this);
       if (!mounted || _isDisposing) {
-        _hoveringTrigger = false;
-        _hoveringTooltip = false;
         return;
       }
       if (announce && wasVisible) {
@@ -489,7 +523,7 @@ class _DashronymInlineState extends State<DashronymInline>
         _announce(strings.announceTooltipHidden(widget.acronym));
       }
       if (restoreFocus) {
-        _restoreTriggerFocus();
+        _interaction.restoreTriggerFocus();
       }
     }
 
@@ -500,7 +534,6 @@ class _DashronymInlineState extends State<DashronymInline>
     } else {
       _tooltipVisible = false;
     }
-
     if (immediate) {
       _fadeController.stop();
       _fadeController.value = 0;
@@ -511,160 +544,20 @@ class _DashronymInlineState extends State<DashronymInline>
     _fadeController.reverse().whenComplete(completeRemoval);
   }
 
-  void _restoreTriggerFocus() {
-    if (!mounted || _isDisposing || !_focusNode.canRequestFocus) return;
-    _suppressFocusShow = true;
-    _focusNode.requestFocus();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _suppressFocusShow = false;
-    });
-  }
-
-  void _scheduleHoverHide() {
-    _hoverHideTimer?.cancel();
-    _hoverHideTimer = Timer(_hoverHideDelay, () {
-      if (!mounted ||
-          _isDisposing ||
-          _hoveringTrigger ||
-          _hoveringTooltip ||
-          _focusNode.hasFocus ||
-          _tooltipFocusScope.hasFocus) {
-        return;
-      }
-      _hide();
-    });
-  }
-
-  void _handleFocusLoss() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted ||
-          _isDisposing ||
-          _focusNode.hasFocus ||
-          _tooltipFocusScope.hasFocus ||
-          _hoveringTrigger ||
-          _hoveringTooltip) {
-        return;
-      }
-      _hide();
-    });
-  }
-
-  Widget _buildOverlay(
-    BuildContext context,
-    OverlayChildLayoutInfo layoutInfo,
-  ) {
-    final triggerMediaQuery = MediaQuery.maybeOf(this.context);
-    final anchorRect = MatrixUtils.transformRect(
-      layoutInfo.childPaintTransform,
-      Offset.zero & layoutInfo.childSize,
-    );
+  Widget _buildTooltip(BuildContext context) {
     final tooltipDetails = DashronymTooltipDetails(
       acronym: widget.acronym,
       description: widget.description,
       theme: widget.theme,
       hideTooltip: () => _hide(restoreFocus: true),
-      entry: widget.entry,
     );
-    final isCustomTooltip = widget.tooltipBuilder != null;
-    final builtTooltip =
-        widget.tooltipBuilder?.call(context, tooltipDetails) ??
+    return widget.tooltipBuilder?.call(context, tooltipDetails) ??
         DashronymTooltipCard(
           acronym: widget.acronym,
           description: widget.description,
           theme: widget.theme,
           onClose: () => _hide(restoreFocus: true),
         );
-    final tooltip = _TooltipViewportClamp(
-      theme: widget.theme,
-      mediaQuery: triggerMediaQuery,
-      makeScrollable: isCustomTooltip,
-      child: builtTooltip,
-    );
-
-    Widget result = Shortcuts(
-      shortcuts: const <ShortcutActivator, Intent>{
-        SingleActivator(LogicalKeyboardKey.escape): DismissIntent(),
-      },
-      child: Actions(
-        actions: <Type, Action<Intent>>{
-          DismissIntent: CallbackAction<DismissIntent>(
-            onInvoke: (_) {
-              _hide(restoreFocus: true);
-              return null;
-            },
-          ),
-        },
-        child: FocusScope(
-          node: _tooltipFocusScope,
-          onFocusChange: (focused) {
-            if (focused) {
-              _hoverHideTimer?.cancel();
-            } else {
-              _handleFocusLoss();
-            }
-          },
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: ExcludeSemantics(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.translucent,
-                    onTap: () {
-                      _hide();
-                      _focusNode.unfocus();
-                    },
-                    onSecondaryTap: () {
-                      _hide();
-                      _focusNode.unfocus();
-                    },
-                  ),
-                ),
-              ),
-              Positioned.fill(
-                child: CustomSingleChildLayout(
-                  delegate: _DashronymTooltipLayoutDelegate(
-                    anchorRect: anchorRect,
-                    theme: widget.theme,
-                    padding: triggerMediaQuery?.padding ?? EdgeInsets.zero,
-                    keyboardInset: triggerMediaQuery?.viewInsets.bottom ?? 0.0,
-                    direction: Directionality.of(this.context),
-                    viewportMargin: _viewportMargin,
-                  ),
-                  child: MouseRegion(
-                    opaque: false,
-                    onEnter: widget.theme.enableHover
-                        ? (_) {
-                            _hoveringTooltip = true;
-                            _hoverHideTimer?.cancel();
-                          }
-                        : null,
-                    onExit: widget.theme.enableHover
-                        ? (_) {
-                            _hoveringTooltip = false;
-                            _scheduleHoverHide();
-                          }
-                        : null,
-                    child: FadeTransition(
-                      opacity: _opacity,
-                      child: ScaleTransition(
-                        scale: _scale,
-                        child: tooltip,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-    if (triggerMediaQuery != null) {
-      result = MediaQuery(data: triggerMediaQuery, child: result);
-    }
-    // The layout-builder portal provides root-overlay constraints even when the
-    // source lives in a tightly constrained WidgetSpan.
-    return Positioned.fill(child: result);
   }
 
   TextStyle _effectiveTextStyle(BuildContext context) {
@@ -699,62 +592,42 @@ class _DashronymInlineState extends State<DashronymInline>
     );
 
     Widget result = GestureDetector(
-      onTap: () {
-        final wasVisible = _tooltipVisible;
-        if (!_focusNode.hasFocus) {
-          _focusNode.requestFocus();
-        }
-        if (wasVisible) {
-          _hide();
-        } else {
-          _show();
-        }
-      },
+      onTap: () => _interaction.handleTriggerTap(wasVisible: _tooltipVisible),
       behavior: HitTestBehavior.opaque,
       child: MouseRegion(
         onEnter: widget.theme.enableHover
-            ? (_) {
-                _hoveringTrigger = true;
-                _hoverShowTimer?.cancel();
-                _hoverHideTimer?.cancel();
-                _hoverShowTimer = Timer(widget.theme.hoverShowDelay, () {
-                  if (mounted && !_isDisposing && _hoveringTrigger) {
-                    _show();
-                  }
-                });
-              }
+            ? (_) => _interaction.handleTriggerEnter()
             : null,
         onExit: widget.theme.enableHover
-            ? (_) {
-                _hoveringTrigger = false;
-                _hoverShowTimer?.cancel();
-                _scheduleHoverHide();
-              }
+            ? (_) => _interaction.handleTriggerExit()
             : null,
         cursor: SystemMouseCursors.click,
         child: textWidget,
       ),
     );
 
-    result = OverlayPortal.overlayChildLayoutBuilder(
+    result = DashronymTooltipOverlay(
       controller: _portalController,
-      overlayLocation: OverlayChildLocation.rootOverlay,
-      overlayChildBuilder: _buildOverlay,
+      theme: widget.theme,
+      opacity: _opacity,
+      scale: _scale,
+      tooltipFocusScope: _interaction.tooltipFocusScope,
+      tooltipBuilder: _buildTooltip,
+      makeScrollable: widget.tooltipBuilder != null,
+      onDismiss: () => _hide(restoreFocus: true),
+      onOutsideDismiss: () {
+        _hide();
+        _interaction.triggerFocusNode.unfocus();
+      },
+      onTooltipEnter: _interaction.handleTooltipEnter,
+      onTooltipExit: _interaction.handleTooltipExit,
+      onTooltipFocusChange: _interaction.handleTooltipFocusChange,
       child: result,
     );
 
     result = FocusableActionDetector(
-      focusNode: _focusNode,
-      onFocusChange: (focused) {
-        if (focused) {
-          _hoverHideTimer?.cancel();
-          if (!_suppressFocusShow) {
-            _show();
-          }
-        } else {
-          _handleFocusLoss();
-        }
-      },
+      focusNode: _interaction.triggerFocusNode,
+      onFocusChange: _interaction.handleTriggerFocusChange,
       onShowFocusHighlight: (show) {
         if (show == _showFocusHighlight || !mounted) return;
         setState(() {
@@ -811,104 +684,6 @@ class _DashronymInlineState extends State<DashronymInline>
           : strings.semanticsHintShow(widget.acronym),
       onTap: _toggle,
       child: result,
-    );
-  }
-}
-
-class _DashronymTooltipLayoutDelegate extends SingleChildLayoutDelegate {
-  const _DashronymTooltipLayoutDelegate({
-    required this.anchorRect,
-    required this.theme,
-    required this.padding,
-    required this.keyboardInset,
-    required this.direction,
-    required this.viewportMargin,
-  });
-
-  final Rect anchorRect;
-  final DashronymTheme theme;
-  final EdgeInsets padding;
-  final double keyboardInset;
-  final TextDirection direction;
-  final double viewportMargin;
-
-  @override
-  BoxConstraints getConstraintsForChild(BoxConstraints constraints) =>
-      constraints.loosen();
-
-  @override
-  Offset getPositionForChild(Size size, Size childSize) {
-    final relativeOffset = DashronymTooltipPositioner.resolveOffset(
-      overlaySize: size,
-      anchorTopLeft: anchorRect.topLeft,
-      anchorSize: anchorRect.size,
-      tooltipSize: childSize,
-      theme: theme,
-      padding: padding,
-      keyboardInset: keyboardInset,
-      direction: direction,
-      viewportMargin: viewportMargin,
-    );
-    return anchorRect.topLeft + relativeOffset;
-  }
-
-  @override
-  bool shouldRelayout(_DashronymTooltipLayoutDelegate oldDelegate) =>
-      anchorRect != oldDelegate.anchorRect ||
-      theme != oldDelegate.theme ||
-      padding != oldDelegate.padding ||
-      keyboardInset != oldDelegate.keyboardInset ||
-      direction != oldDelegate.direction ||
-      viewportMargin != oldDelegate.viewportMargin;
-}
-
-class _TooltipViewportClamp extends StatelessWidget {
-  const _TooltipViewportClamp({
-    required this.theme,
-    required this.mediaQuery,
-    required this.makeScrollable,
-    required this.child,
-  });
-
-  final DashronymTheme theme;
-  final MediaQueryData? mediaQuery;
-  final bool makeScrollable;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, parentConstraints) {
-        final mqForBuilder = mediaQuery ?? MediaQuery.maybeOf(context);
-        final resolvedConstraints = DashronymTooltipConstraints.resolve(
-          constraints: parentConstraints,
-          mediaQuery: mqForBuilder,
-          theme: theme,
-        );
-        final appliedConstraints = makeScrollable
-            ? resolvedConstraints.copyWith(
-                minWidth: (theme.tooltipMaxWidth ?? theme.cardWidth)
-                    .clamp(
-                      resolvedConstraints.minWidth,
-                      resolvedConstraints.maxWidth,
-                    )
-                    .toDouble(),
-              )
-            : resolvedConstraints;
-        final constrainedChild = makeScrollable
-            ? SingleChildScrollView(primary: false, child: child)
-            : child;
-        return DashronymTooltipConstraintScope(
-          constraints: appliedConstraints,
-          child: ConstrainedBox(
-            constraints: appliedConstraints,
-            // Material elevation is paint overflow and must remain visible
-            // outside the card's layout bounds. The stock card and custom
-            // scroll host already clip their own overflowing contents.
-            child: constrainedChild,
-          ),
-        );
-      },
     );
   }
 }

@@ -257,7 +257,13 @@ void main() {
 
     await tester.pump();
 
-    final richText = tester.widget<RichText>(find.byType(RichText));
+    final richText = tester
+        .widgetList<RichText>(find.byType(RichText))
+        .singleWhere(
+          (widget) => _walkSpans(widget.text).any(
+            (span) => span is WidgetSpan,
+          ),
+        );
     expect(richText.text.style?.fontWeight, FontWeight.bold);
   });
 
@@ -277,7 +283,13 @@ void main() {
       ),
     );
 
-    final richText = tester.widget<RichText>(find.byType(RichText));
+    final richText = tester
+        .widgetList<RichText>(find.byType(RichText))
+        .singleWhere(
+          (widget) => _walkSpans(widget.text).any(
+            (span) => span is WidgetSpan,
+          ),
+        );
     expect(richText.text.style?.fontSize, 22);
   });
 }

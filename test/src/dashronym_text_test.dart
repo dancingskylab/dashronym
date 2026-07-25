@@ -24,6 +24,41 @@ void main() {
     expect(span.children?.whereType<WidgetSpan>().length, 1);
   });
 
+  testWidgets('standalone DashronymText coordinates its tooltips', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: DashronymText(
+            'Use (SDK) with the (API).',
+            registry: DashronymRegistry({
+              'SDK': 'Software Development Kit',
+              'API': 'Application Programming Interface',
+            }),
+          ),
+        ),
+      ),
+    );
+
+    tester.semantics.tap(
+      find.semantics.byHint('Double tap to show definition for SDK.'),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Software Development Kit'), findsOneWidget);
+
+    tester.semantics.tap(
+      find.semantics.byHint('Double tap to show definition for API.'),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Software Development Kit'), findsNothing);
+    expect(find.text('Application Programming Interface'), findsOneWidget);
+
+    semantics.dispose();
+  });
+
   testWidgets(
     'DashronymText merges inherited style and honors semanticsLabel',
     (tester) async {
@@ -76,7 +111,7 @@ void main() {
             'SDK docs',
             registry: DashronymRegistry({'SDK': 'Software Development Kit'}),
             style: const TextStyle(inherit: false, fontSize: 18),
-            config: const DashronymConfig(),
+            config: const DashronymConfig(enableBareAcronyms: false),
             theme: const DashronymTheme(),
           ),
         ),
@@ -321,7 +356,9 @@ void main() {
                       const DashronymText(
                         'API',
                         key: ValueKey('explicit-config-text'),
-                        config: DashronymConfig(),
+                        config: DashronymConfig(
+                          enableBareAcronyms: false,
+                        ),
                       ),
                     ],
                   ),

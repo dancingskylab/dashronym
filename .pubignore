@@ -27,7 +27,7 @@
 /doc/
 /packagetester/
 /package_tester/
-/test/goldens/
+/test/src/goldens/
 *.class
 *.log
 *.pyc

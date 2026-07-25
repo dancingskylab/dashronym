@@ -14,10 +14,11 @@
 /// Invariants:
 /// * [minLen] > 0
 /// * [maxLen] >= [minLen]
+/// * [acceptMarkers] contains at most [maxAcceptedMarkerPairs] pairs
 ///
 /// Example:
 /// ```dart
-/// const config = DashronymConfig(
+/// final config = DashronymConfig.withMarkers(
 ///   enableBareAcronyms: true,
 ///   minLen: 2,
 ///   maxLen: 10,
@@ -25,39 +26,37 @@
 /// );
 /// ```
 class DashronymConfig {
-  /// The marker pairs recognized when [acceptMarkers] is omitted.
+  /// The marker pairs used by the default constructor.
   static const List<String> defaultAcceptMarkers = ['()', "''", '""'];
+
+  /// The maximum number of marker pairs accepted by one configuration.
+  static const int maxAcceptedMarkerPairs = 16;
 
   /// Creates a configuration for acronym parsing and matching.
   ///
-  /// By default, only marker-wrapped acronyms are matched; set
-  /// [enableBareAcronyms] to `true` to also consider ALL-CAPS words.
+  /// By default, both marker-wrapped acronyms and bare ALL-CAPS words are
+  /// matched.
   ///
   /// Validation is deferred until [validate] is called or the configuration is
   /// consumed by a parser. This keeps the constructor `const` while still
   /// enforcing the invariants in release builds.
-  ///
-  /// This constructor retains the supplied marker list to preserve `const`
-  /// construction. Prefer [DashronymConfig.immutable] when marker pairs come
-  /// from a mutable or dynamically produced collection.
   const DashronymConfig({
-    this.enableBareAcronyms = false,
+    this.enableBareAcronyms = true,
     this.minLen = 2,
     this.maxLen = 10,
-    List<String> acceptMarkers = defaultAcceptMarkers,
-  }) : _acceptMarkers = acceptMarkers;
+  }) : _acceptMarkers = defaultAcceptMarkers;
 
-  /// Creates a validated configuration with a defensive marker-pair copy.
+  /// Creates a validated configuration with custom marker pairs.
   ///
-  /// Use this constructor for marker pairs loaded at runtime. Subsequent
-  /// changes to the source iterable cannot alter this configuration.
-  factory DashronymConfig.immutable({
-    bool enableBareAcronyms = false,
+  /// The supplied iterable is defensively copied. Subsequent changes to the
+  /// source collection cannot alter this configuration or its value equality.
+  factory DashronymConfig.withMarkers({
+    bool enableBareAcronyms = true,
     int minLen = 2,
     int maxLen = 10,
-    Iterable<String> acceptMarkers = defaultAcceptMarkers,
+    required Iterable<String> acceptMarkers,
   }) {
-    final config = DashronymConfig(
+    final config = DashronymConfig._(
       enableBareAcronyms: enableBareAcronyms,
       minLen: minLen,
       maxLen: maxLen,
@@ -66,6 +65,13 @@ class DashronymConfig {
     config.validate();
     return config;
   }
+
+  const DashronymConfig._({
+    required this.enableBareAcronyms,
+    required this.minLen,
+    required this.maxLen,
+    required List<String> acceptMarkers,
+  }) : _acceptMarkers = acceptMarkers;
 
   /// Whether bare ALL-CAPS words are matched against the registry.
   ///
@@ -91,7 +97,7 @@ class DashronymConfig {
   /// pairs are supported. Pairs are treated literally by the parser.
   ///
   /// The returned list cannot be modified.
-  List<String> get acceptMarkers => List<String>.unmodifiable(_acceptMarkers);
+  List<String> get acceptMarkers => _acceptMarkers;
 
   final List<String> _acceptMarkers;
 
@@ -115,6 +121,14 @@ class DashronymConfig {
       );
     }
 
+    if (_acceptMarkers.length > maxAcceptedMarkerPairs) {
+      throw ArgumentError.value(
+        _acceptMarkers.length,
+        'acceptMarkers',
+        'must contain at most $maxAcceptedMarkerPairs marker pairs',
+      );
+    }
+
     for (final pair in _acceptMarkers) {
       if (pair.runes.length != 2) {
         throw ArgumentError.value(
@@ -135,10 +149,33 @@ class DashronymConfig {
     int? minLen,
     int? maxLen,
     Iterable<String>? acceptMarkers,
-  }) => DashronymConfig.immutable(
+  }) => DashronymConfig.withMarkers(
     enableBareAcronyms: enableBareAcronyms ?? this.enableBareAcronyms,
     minLen: minLen ?? this.minLen,
     maxLen: maxLen ?? this.maxLen,
     acceptMarkers: acceptMarkers ?? _acceptMarkers,
   );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is DashronymConfig &&
+          other.enableBareAcronyms == enableBareAcronyms &&
+          other.minLen == minLen &&
+          other.maxLen == maxLen &&
+          _listsEqual(other._acceptMarkers, _acceptMarkers);
+
+  @override
+  int get hashCode => Object.hash(
+    enableBareAcronyms,
+    minLen,
+    maxLen,
+    Object.hashAll(_acceptMarkers),
+  );
+
+  static bool _listsEqual(List<String> left, List<String> right) =>
+      left.length == right.length &&
+      Iterable<int>.generate(
+        left.length,
+      ).every((index) => left[index] == right[index]);
 }

@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 import 'dashronym_theme.dart';
@@ -146,4 +147,65 @@ class DashronymTooltipPositioner {
 
     return Offset(left - anchorTopLeft.dx, top - anchorTopLeft.dy);
   }
+}
+
+/// Positions a tooltip relative to its transformed inline anchor.
+@internal
+class DashronymTooltipLayoutDelegate extends SingleChildLayoutDelegate {
+  /// Creates a tooltip layout delegate.
+  const DashronymTooltipLayoutDelegate({
+    required this.anchorRect,
+    required this.theme,
+    required this.padding,
+    required this.keyboardInset,
+    required this.direction,
+    required this.viewportMargin,
+  });
+
+  /// Trigger bounds in root-overlay coordinates.
+  final Rect anchorRect;
+
+  /// Effective tooltip theme.
+  final DashronymTheme theme;
+
+  /// Safe-area padding inherited from the trigger.
+  final EdgeInsets padding;
+
+  /// Bottom inset reserved for the on-screen keyboard.
+  final double keyboardInset;
+
+  /// Text direction inherited from the trigger.
+  final TextDirection direction;
+
+  /// Minimum desired distance from viewport edges.
+  final double viewportMargin;
+
+  @override
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) =>
+      constraints.loosen();
+
+  @override
+  Offset getPositionForChild(Size size, Size childSize) {
+    final relativeOffset = DashronymTooltipPositioner.resolveOffset(
+      overlaySize: size,
+      anchorTopLeft: anchorRect.topLeft,
+      anchorSize: anchorRect.size,
+      tooltipSize: childSize,
+      theme: theme,
+      padding: padding,
+      keyboardInset: keyboardInset,
+      direction: direction,
+      viewportMargin: viewportMargin,
+    );
+    return anchorRect.topLeft + relativeOffset;
+  }
+
+  @override
+  bool shouldRelayout(DashronymTooltipLayoutDelegate oldDelegate) =>
+      anchorRect != oldDelegate.anchorRect ||
+      theme != oldDelegate.theme ||
+      padding != oldDelegate.padding ||
+      keyboardInset != oldDelegate.keyboardInset ||
+      direction != oldDelegate.direction ||
+      viewportMargin != oldDelegate.viewportMargin;
 }

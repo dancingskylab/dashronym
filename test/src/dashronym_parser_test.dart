@@ -29,89 +29,14 @@ void main() {
     );
   });
 
-  test('DashronymParser caches spans for identical input', () {
-    final core = DashronymParserCore(
-      registry: DashronymRegistry({'SDK': 'Software Development Kit'}),
-      config: const DashronymConfig(enableBareAcronyms: true),
-    );
-    final first = core.parse('Using (SDK) daily.');
-    final second = core.parse('Using (SDK) daily.');
-
-    expect(identical(first, second), isTrue);
-  });
-
-  test('parser cache is bounded and reads promote entries', () {
-    final core = DashronymParserCore(
-      registry: DashronymRegistry.empty(),
-      config: const DashronymConfig(),
-      cacheCapacity: 2,
-    );
-    final first = core.parse('first');
-    final second = core.parse('second');
-
-    expect(identical(core.parse('first'), first), isTrue);
-    core.parse('third');
-
-    expect(identical(core.parse('second'), second), isFalse);
-  });
-
-  test('parser caches are isolated from other registries', () {
-    const input = 'Use the (SDK).';
-    final firstRegistry = DashronymParserCore(
-      registry: DashronymRegistry({'SDK': 'First definition'}),
-      config: const DashronymConfig(),
-    );
-    final secondRegistry = DashronymParserCore(
-      registry: DashronymRegistry({'SDK': 'Second definition'}),
-      config: const DashronymConfig(),
-    );
-
-    expect(
-      firstRegistry.parse(input),
-      const [
-        DashronymTextToken('Use the '),
-        DashronymMatchToken(acronym: 'SDK', description: 'First definition'),
-        DashronymTextToken('.'),
-      ],
-    );
-    expect(
-      secondRegistry.parse(input),
-      const [
-        DashronymTextToken('Use the '),
-        DashronymMatchToken(acronym: 'SDK', description: 'Second definition'),
-        DashronymTextToken('.'),
-      ],
-    );
-  });
-
-  test('empty registry cannot receive cached tokens from another registry', () {
-    const input = 'Cache isolation for (SDK).';
-    final populatedParser = DashronymParserCore(
-      registry: DashronymRegistry({'SDK': 'Software Development Kit'}),
-      config: const DashronymConfig(),
-    );
-    final emptyParser = DashronymParserCore(
-      registry: DashronymRegistry.empty(),
-      config: const DashronymConfig(),
-    );
-
-    expect(
-      populatedParser.parse(input),
-      contains(
-        const DashronymMatchToken(
-          acronym: 'SDK',
-          description: 'Software Development Kit',
-        ),
-      ),
-    );
-    expect(emptyParser.parse(input), const [DashronymTextToken(input)]);
-  });
-
   test('parser snapshots marker configuration when it is created', () {
     final markers = ['[]'];
     final parser = DashronymParserCore(
       registry: DashronymRegistry({'SDK': 'Software Development Kit'}),
-      config: DashronymConfig(acceptMarkers: markers),
+      config: DashronymConfig.withMarkers(
+        enableBareAcronyms: false,
+        acceptMarkers: markers,
+      ),
     );
 
     markers
@@ -133,7 +58,7 @@ void main() {
   test('parser supports marker pairs made of non-BMP characters', () {
     final parser = DashronymParserCore(
       registry: DashronymRegistry({'SDK': 'Software Development Kit'}),
-      config: const DashronymConfig(acceptMarkers: ['🔹🔸']),
+      config: DashronymConfig.withMarkers(acceptMarkers: const ['🔹🔸']),
     );
 
     expect(
@@ -181,19 +106,14 @@ void main() {
       );
     });
 
-    test('resolves aliases and honors registry case sensitivity', () {
-      final entry = DashronymEntry(
-        acronym: 'DOTNET',
-        expansion: 'Microsoft .NET',
-        aliases: const ['.NET'],
-      );
+    test('honors registry case sensitivity', () {
       final insensitive = DashronymParserCore(
-        registry: DashronymRegistry.fromEntries([entry]),
+        registry: DashronymRegistry({'.NET': 'Microsoft .NET'}),
         config: const DashronymConfig(),
       );
       final sensitive = DashronymParserCore(
-        registry: DashronymRegistry.fromEntries(
-          [entry],
+        registry: DashronymRegistry(
+          {'.NET': 'Microsoft .NET'},
           caseInsensitive: false,
         ),
         config: const DashronymConfig(),
@@ -291,6 +211,41 @@ void main() {
     expect(widgetSpans.length, 2);
   });
 
+  test('bare matching is enabled by default', () {
+    final parser = DashronymParserCore(
+      registry: DashronymRegistry({
+        'API': 'Application Programming Interface',
+      }),
+      config: const DashronymConfig(),
+    );
+
+    expect(
+      parser.parse('Use the API.'),
+      const [
+        DashronymTextToken('Use the '),
+        DashronymMatchToken(
+          acronym: 'API',
+          description: 'Application Programming Interface',
+        ),
+        DashronymTextToken('.'),
+      ],
+    );
+  });
+
+  test('bare matching honors a minimum length of one', () {
+    final parser = DashronymParserCore(
+      registry: DashronymRegistry({'I': 'Input'}),
+      config: const DashronymConfig(minLen: 1, maxLen: 1),
+    );
+
+    expect(
+      parser.parse('I'),
+      const [
+        DashronymMatchToken(acronym: 'I', description: 'Input'),
+      ],
+    );
+  });
+
   test('bare matching remains conservative ALL-CAPS ASCII', () {
     final parser = DashronymParserCore(
       registry: DashronymRegistry({
@@ -313,27 +268,5 @@ void main() {
         ),
       ],
     );
-  });
-
-  test('DashronymParser threads rich entries into inline widgets', () {
-    final entry = DashronymEntry(
-      acronym: 'SDK',
-      expansion: 'Software Development Kit',
-      definition: 'Tools used to build software.',
-      tags: const ['software'],
-      source: 'internal-glossary',
-    );
-    final parser = DashronymParser(
-      registry: DashronymRegistry.fromEntries([entry]),
-      config: const DashronymConfig(enableBareAcronyms: true),
-      theme: const DashronymTheme(),
-      baseStyle: const TextStyle(),
-    );
-
-    final widgetSpan = parser
-        .parseToSpans('SDK')
-        .whereType<WidgetSpan>()
-        .single;
-    expect((widgetSpan.child as DashronymInline).entry, same(entry));
   });
 }

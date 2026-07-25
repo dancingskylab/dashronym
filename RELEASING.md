@@ -97,8 +97,8 @@ release pull request.
 - Inspect exports from `lib/dashronym.dart`.
 - Confirm every public declaration has useful dartdoc.
 - Compare the generated API with the previous release.
-- Confirm equality, immutability, matching, locale, serialization, and null
-  behavior for new models.
+- Confirm equality, immutability, matching, locale, and null behavior for new
+  value types.
 - Benchmark large inputs or registries when parser/cache behavior changes.
 - Verify that separate registries, widgets, views, and tenants cannot leak
   definitions or state to one another.

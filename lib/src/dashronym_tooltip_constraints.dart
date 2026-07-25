@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 import 'dashronym_theme.dart';
@@ -157,4 +158,66 @@ class DashronymTooltipConstraintScope extends InheritedWidget {
   @override
   bool updateShouldNotify(DashronymTooltipConstraintScope oldWidget) =>
       constraints != oldWidget.constraints;
+}
+
+/// Applies viewport-safe constraints to stock and custom tooltip content.
+@internal
+class DashronymTooltipViewport extends StatelessWidget {
+  /// Creates a viewport-constrained tooltip host.
+  const DashronymTooltipViewport({
+    super.key,
+    required this.theme,
+    required this.mediaQuery,
+    required this.makeScrollable,
+    required this.child,
+  });
+
+  /// Effective tooltip theme.
+  final DashronymTheme theme;
+
+  /// Media-query data inherited from the inline trigger.
+  final MediaQueryData? mediaQuery;
+
+  /// Whether to wrap custom content in a scroll view.
+  final bool makeScrollable;
+
+  /// Tooltip content.
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, parentConstraints) {
+        final mqForBuilder = mediaQuery ?? MediaQuery.maybeOf(context);
+        final resolvedConstraints = DashronymTooltipConstraints.resolve(
+          constraints: parentConstraints,
+          mediaQuery: mqForBuilder,
+          theme: theme,
+        );
+        final appliedConstraints = makeScrollable
+            ? resolvedConstraints.copyWith(
+                minWidth: (theme.tooltipMaxWidth ?? theme.cardWidth)
+                    .clamp(
+                      resolvedConstraints.minWidth,
+                      resolvedConstraints.maxWidth,
+                    )
+                    .toDouble(),
+              )
+            : resolvedConstraints;
+        final constrainedChild = makeScrollable
+            ? SingleChildScrollView(primary: false, child: child)
+            : child;
+        return DashronymTooltipConstraintScope(
+          constraints: appliedConstraints,
+          child: ConstrainedBox(
+            constraints: appliedConstraints,
+            // Material elevation is paint overflow and must remain visible
+            // outside the card's layout bounds. The stock card and custom
+            // scroll host already clip their own overflowing contents.
+            child: constrainedChild,
+          ),
+        );
+      },
+    );
+  }
 }
