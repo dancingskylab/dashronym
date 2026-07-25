@@ -1,6 +1,10 @@
 ## Unreleased
 
-_No changes yet._
+### Fixed
+
+- Fixed a keyboard trap: tabbing into an open tooltip's close button no
+  longer freezes focus there. `Tab`/`Shift+Tab` now escape the tooltip and
+  continue to the next trigger, wrapping back to the first one at the end.
 
 ## 0.2.0 - 2026-07-24
 

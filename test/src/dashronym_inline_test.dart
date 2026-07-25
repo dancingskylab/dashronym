@@ -764,6 +764,74 @@ void main() {
     expect(find.text('Application Programming Interface'), findsOneWidget);
   });
 
+  testWidgets(
+    'tab traversal escapes an open tooltip and wraps back to the first '
+    'trigger',
+    (tester) async {
+      await tester.pumpWidget(
+        _testHarness(
+          DashronymScope(
+            registry: DashronymRegistry(<String, String>{}),
+            child: FocusTraversalGroup(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DashronymInline(
+                    acronym: 'SDK',
+                    description: 'Software Development Kit',
+                    theme: _theme(),
+                    textStyle: const TextStyle(),
+                  ),
+                  const SizedBox(height: 12),
+                  DashronymInline(
+                    acronym: 'API',
+                    description: 'Application Programming Interface',
+                    theme: _theme(),
+                    textStyle: const TextStyle(),
+                  ),
+                  const SizedBox(height: 12),
+                  DashronymInline(
+                    acronym: 'CLI',
+                    description: 'Command Line Interface',
+                    theme: _theme(),
+                    textStyle: const TextStyle(),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      Future<void> tab() async {
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pumpAndSettle();
+      }
+
+      await tab();
+      expect(find.text('Software Development Kit'), findsOneWidget);
+      await tab();
+      expect(find.text('Application Programming Interface'), findsOneWidget);
+      await tab();
+      expect(find.text('Command Line Interface'), findsOneWidget);
+
+      // The next stop is the open tooltip's own close button, not another
+      // trigger.
+      await tab();
+      expect(find.text('Command Line Interface'), findsOneWidget);
+      final closeButtonFocus = FocusManager.instance.primaryFocus;
+      expect(closeButtonFocus, isNotNull);
+
+      // Tabbing past the tooltip's only control must escape the tooltip's
+      // focus scope and land back on the first trigger, not loop on the
+      // close button forever.
+      await tab();
+      expect(find.text('Command Line Interface'), findsNothing);
+      expect(find.text('Software Development Kit'), findsOneWidget);
+      expect(FocusManager.instance.primaryFocus, isNot(closeButtonFocus));
+    },
+  );
+
   testWidgets('independent scopes do not dismiss each other', (tester) async {
     final semantics = tester.ensureSemantics();
 

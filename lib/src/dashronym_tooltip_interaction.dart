@@ -38,8 +38,14 @@ class DashronymTooltipInteraction {
   );
 
   /// Focus scope shared by controls inside the tooltip.
+  ///
+  /// [TraversalEdgeBehavior.parentScope] lets Tab/Shift+Tab escape to the
+  /// next sibling trigger once traversal runs out of tooltip controls,
+  /// instead of looping forever inside a scope that may hold only one
+  /// focusable control (the close button).
   final FocusScopeNode tooltipFocusScope = FocusScopeNode(
     debugLabel: 'DashronymTooltip',
+    traversalEdgeBehavior: TraversalEdgeBehavior.parentScope,
   );
 
   Duration _hoverShowDelay;
