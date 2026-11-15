@@ -51,6 +51,15 @@ jobs:
         if: matrix.flutter-version == env.LATEST_FLUTTER_VERSION
         run: dart format --output=none --set-exit-if-changed .
 
+      - name: Keep lib free of design-system dependencies
+        shell: bash
+        run: |
+          pattern="package:(flutter/(material|cupertino)\.dart|material_ui/|cupertino_ui/)"
+          if grep -rnE "^\s*(import|export)\s+['\"]${pattern}" lib; then
+            echo "lib/ must stay design-system agnostic; see CONTRIBUTING.md."
+            exit 1
+          fi
+
       - name: Run strict static analysis
         run: flutter analyze --fatal-infos
 

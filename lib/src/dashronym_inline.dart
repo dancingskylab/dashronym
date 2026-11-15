@@ -23,7 +23,7 @@
 ///       acronym: 'SDK',
 ///       description: 'Software Development Kit',
 ///       theme: myDashronymTheme,
-///       textStyle: Theme.of(context).textTheme.bodyMedium,
+///       textStyle: DefaultTextStyle.of(context).style,
 ///     ),
 ///     const Text('before continuing.'),
 ///   ],
@@ -50,9 +50,10 @@ import 'dashronym_tooltip_overlay.dart';
 ///
 /// The function receives the current [BuildContext] and a [DashronymTooltipDetails]
 /// object describing the selected term. Return any widget you want to display as the
-/// tooltip body (e.g. a custom card, sheet, etc.).
+/// tooltip body, typically built from your app's design system.
 ///
 /// ### Example
+/// Using the standalone `material_ui` package (any design system works):
 /// ```dart
 /// DashronymText(
 ///   'The (CI) build passed.',
@@ -111,7 +112,7 @@ class DashronymTooltipDetails {
 /// An inline, tappable acronym that shows an accessible tooltip card.
 ///
 /// When activated (tap/Enter/Space) or focused/hovered (if enabled), this
-/// widget opens a Material overlay positioned near the inline text. The overlay
+/// widget opens an overlay positioned near the inline text. The overlay
 /// renders a small card (see [DashronymTooltipCard]) with the acronym and its
 /// full [description]. It supports keyboard, screen reader, and pointer
 /// interactions:
@@ -137,7 +138,7 @@ class DashronymTooltipDetails {
 ///           acronym: 'SDK',
 ///           description: 'Software Development Kit',
 ///           theme: myDashronymTheme,
-///           textStyle: Theme.of(context).textTheme.bodyMedium,
+///           textStyle: DefaultTextStyle.of(context).style,
 ///         ),
 ///       ),
 ///     ],

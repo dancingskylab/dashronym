@@ -11,7 +11,7 @@ import 'dashronym_theme.dart';
 /// tooltip builders supplied to `DashronymInline`. It projects the overlay, media
 /// query and theme caps into a single [BoxConstraints] so tooltip layout stays
 /// inside the window gutters and clear of the on-screen keyboard. Paint
-/// overflow such as Material elevation remains visible.
+/// overflow such as the card's elevation shadow remains visible.
 class DashronymTooltipConstraints {
   const DashronymTooltipConstraints._(); // coverage:ignore-line
 
@@ -211,7 +211,7 @@ class DashronymTooltipViewport extends StatelessWidget {
           constraints: appliedConstraints,
           child: ConstrainedBox(
             constraints: appliedConstraints,
-            // Material elevation is paint overflow and must remain visible
+            // Elevation shadows are paint overflow and must remain visible
             // outside the card's layout bounds. The stock card and custom
             // scroll host already clip their own overflowing contents.
             child: constrainedChild,
