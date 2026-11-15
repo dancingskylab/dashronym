@@ -110,49 +110,55 @@ class DashronymTooltipOverlay extends StatelessWidget {
           },
         ),
       },
-      child: FocusScope(
-        node: tooltipFocusScope,
-        onFocusChange: onTooltipFocusChange,
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: ExcludeSemantics(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.translucent,
-                  onTap: onOutsideDismiss,
-                  onSecondaryTap: onOutsideDismiss,
+      // DashronymInline orders this scope right after the trigger. Without the
+      // order, the scope sorts by its rect, which spans the whole overlay, and
+      // lands before the trigger, so Tab from the trigger would skip the card.
+      child: FocusTraversalOrder(
+        order: const NumericFocusOrder(1),
+        child: FocusScope(
+          node: tooltipFocusScope,
+          onFocusChange: onTooltipFocusChange,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: ExcludeSemantics(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onTap: onOutsideDismiss,
+                    onSecondaryTap: onOutsideDismiss,
+                  ),
                 ),
               ),
-            ),
-            Positioned.fill(
-              child: CustomSingleChildLayout(
-                delegate: DashronymTooltipLayoutDelegate(
-                  anchorRect: anchorRect,
-                  theme: theme,
-                  padding: mediaQuery?.padding ?? EdgeInsets.zero,
-                  keyboardInset: mediaQuery?.viewInsets.bottom ?? 0.0,
-                  direction: Directionality.of(triggerContext),
-                  viewportMargin: DashronymTooltipConstraints.outerGutter,
-                ),
-                child: MouseRegion(
-                  opaque: false,
-                  onEnter: theme.enableHover ? (_) => onTooltipEnter() : null,
-                  onExit: theme.enableHover ? (_) => onTooltipExit() : null,
-                  child: FadeTransition(
-                    opacity: opacity,
-                    child: ScaleTransition(
-                      // Reduce Motion asks for cross-fades instead of motion, so keep
-                      // the card at full size and let it only fade.
-                      scale: (mediaQuery?.reduceMotion ?? false)
-                          ? kAlwaysCompleteAnimation
-                          : scale,
-                      child: tooltip,
+              Positioned.fill(
+                child: CustomSingleChildLayout(
+                  delegate: DashronymTooltipLayoutDelegate(
+                    anchorRect: anchorRect,
+                    theme: theme,
+                    padding: mediaQuery?.padding ?? EdgeInsets.zero,
+                    keyboardInset: mediaQuery?.viewInsets.bottom ?? 0.0,
+                    direction: Directionality.of(triggerContext),
+                    viewportMargin: DashronymTooltipConstraints.outerGutter,
+                  ),
+                  child: MouseRegion(
+                    opaque: false,
+                    onEnter: theme.enableHover ? (_) => onTooltipEnter() : null,
+                    onExit: theme.enableHover ? (_) => onTooltipExit() : null,
+                    child: FadeTransition(
+                      opacity: opacity,
+                      child: ScaleTransition(
+                        // Reduce Motion asks for cross-fades instead of motion, so keep
+                        // the card at full size and let it only fade.
+                        scale: (mediaQuery?.reduceMotion ?? false)
+                            ? kAlwaysCompleteAnimation
+                            : scale,
+                        child: tooltip,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

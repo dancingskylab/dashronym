@@ -737,6 +737,16 @@ class _DashronymInlineState extends State<DashronymInline>
       child: result,
     );
 
+    // Tab moves from the trigger into its open card, wherever the card sits,
+    // then on to whatever follows the trigger.
+    result = FocusTraversalGroup(
+      policy: OrderedTraversalPolicy(),
+      child: FocusTraversalOrder(
+        order: const NumericFocusOrder(0),
+        child: result,
+      ),
+    );
+
     final attributeRange = TextRange(
       start: 0,
       end: widget.acronym.length,

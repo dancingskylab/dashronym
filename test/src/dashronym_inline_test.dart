@@ -1,6 +1,7 @@
 import 'dart:ui' show PointerDeviceKind, Tristate;
 
 import 'package:dashronym/dashronym.dart';
+import 'package:dashronym/src/dashronym_close_button.dart';
 import 'package:dashronym/src/dashronym_inline.dart';
 import 'package:dashronym/src/dashronym_tooltip_card.dart';
 import 'package:flutter/foundation.dart';
@@ -758,6 +759,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Software Development Kit'), findsOneWidget);
 
+    // Past SDK's close button to the API trigger.
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.pumpAndSettle();
     expect(find.text('Software Development Kit'), findsNothing);
@@ -765,8 +768,7 @@ void main() {
   });
 
   testWidgets(
-    'tab traversal escapes an open tooltip and wraps back to the first '
-    'trigger',
+    'tab visits each trigger and then its open card, wherever the card sits',
     (tester) async {
       await tester.pumpWidget(
         _testHarness(
@@ -808,27 +810,33 @@ void main() {
         await tester.pumpAndSettle();
       }
 
-      await tab();
-      expect(find.text('Software Development Kit'), findsOneWidget);
-      await tab();
-      expect(find.text('Application Programming Interface'), findsOneWidget);
-      await tab();
-      expect(find.text('Command Line Interface'), findsOneWidget);
+      for (final description in [
+        'Software Development Kit',
+        'Application Programming Interface',
+        'Command Line Interface',
+      ]) {
+        // The trigger opens its card...
+        await tab();
+        expect(find.text(description), findsOneWidget);
+        // ...and the next stop is the card's close button. The following
+        // Tab escapes the card's focus scope instead of looping on it.
+        await tab();
+        expect(find.text(description), findsOneWidget);
+        final focused = FocusManager.instance.primaryFocus!.context!;
+        expect(
+          focused.findAncestorWidgetOfExactType<DashronymCloseButton>(),
+          isNotNull,
+        );
+      }
 
-      // The next stop is the open tooltip's own close button, not another
-      // trigger.
-      await tab();
-      expect(find.text('Command Line Interface'), findsOneWidget);
-      final closeButtonFocus = FocusManager.instance.primaryFocus;
-      expect(closeButtonFocus, isNotNull);
-
-      // Tabbing past the tooltip's only control must escape the tooltip's
-      // focus scope and land back on the first trigger, not loop on the
-      // close button forever.
+      // Past the last card, the web hands focus back to the browser; other
+      // platforms wrap to the first trigger.
       await tab();
       expect(find.text('Command Line Interface'), findsNothing);
-      expect(find.text('Software Development Kit'), findsOneWidget);
-      expect(FocusManager.instance.primaryFocus, isNot(closeButtonFocus));
+      expect(
+        find.text('Software Development Kit'),
+        kIsWeb ? findsNothing : findsOneWidget,
+      );
     },
   );
 

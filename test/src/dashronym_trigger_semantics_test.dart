@@ -5,6 +5,7 @@ import 'dart:ui' show LocaleStringAttribute, SemanticsAction, Tristate;
 import 'package:dashronym/dashronym.dart';
 import 'package:dashronym/src/dashronym_inline.dart';
 import 'package:dashronym/src/dashronym_tooltip_card.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/semantics.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -154,7 +155,11 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets('the card is read right after its acronym', (tester) async {
+  // On the web the engine moves the card next to its acronym with aria-owns,
+  // so the framework's tree keeps it in the overlay.
+  testWidgets('the card is read right after its acronym', skip: kIsWeb, (
+    tester,
+  ) async {
     final semantics = tester.ensureSemantics();
     await tester.pumpWidget(
       testHost(
