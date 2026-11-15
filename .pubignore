@@ -28,6 +28,7 @@
 /packagetester/
 /package_tester/
 /test/src/goldens/
+/test/**/failures/
 *.class
 *.log
 *.pyc
@@ -45,3 +46,4 @@
 # Migration scratch space.
 /migrate_working_dir/
 /agents.md
+/CLAUDE.md
