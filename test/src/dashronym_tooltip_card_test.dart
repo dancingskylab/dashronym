@@ -1,7 +1,6 @@
 import 'package:dashronym/dashronym.dart';
 import 'package:dashronym/src/dashronym_tooltip_card.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -12,12 +11,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        localizationsDelegates: const [
-          DashronymLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
+        localizationsDelegates: const [DashronymLocalizations.delegate],
         supportedLocales: DashronymLocalizations.supportedLocales,
         home: Material(
           child: DashronymTooltipCard(
@@ -46,12 +40,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        localizationsDelegates: const [
-          DashronymLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
+        localizationsDelegates: const [DashronymLocalizations.delegate],
         supportedLocales: DashronymLocalizations.supportedLocales,
         home: Material(
           child: DashronymTooltipCard(
@@ -80,12 +69,7 @@ void main() {
   ) async {
     await tester.pumpWidget(
       MaterialApp(
-        localizationsDelegates: const [
-          DashronymLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
+        localizationsDelegates: const [DashronymLocalizations.delegate],
         supportedLocales: DashronymLocalizations.supportedLocales,
         home: MediaQuery(
           data: const MediaQueryData(size: Size(640, 360)),
