@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 import 'dashronym_config.dart';
 import 'dashronym_parser.dart';
@@ -119,9 +119,9 @@ class DashronymText extends StatelessWidget {
 
   /// Visual customization for the inline trigger and the tooltip card.
   ///
-  /// Resolution order is this value, [DashronymScope.theme], the nearest
-  /// [DashronymThemeScope], the [DashronymTheme] in [ThemeData.extensions],
-  /// then package defaults.
+  /// Resolution order is this value, the nearest [DashronymThemeScope]
+  /// (including the one each [DashronymScope] provides), then package
+  /// defaults.
   final DashronymTheme? theme;
 
   /// Optional builder for a custom tooltip widget.
@@ -199,12 +199,7 @@ class DashronymText extends StatelessWidget {
       ]);
     }
     final effectiveConfig = config ?? scope?.config ?? const DashronymConfig();
-    final effectiveTheme =
-        theme ??
-        scope?.theme ??
-        DashronymThemeScope.maybeOf(context) ??
-        Theme.of(context).extension<DashronymTheme>() ??
-        const DashronymTheme();
+    final effectiveTheme = theme ?? DashronymThemeScope.of(context);
     final effectiveTooltipBuilder = tooltipBuilder ?? scope?.tooltipBuilder;
 
     final defaultTextStyle = DefaultTextStyle.of(context);

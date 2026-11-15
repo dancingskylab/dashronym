@@ -1,23 +1,17 @@
 import 'package:dashronym/dashronym.dart';
 import 'package:dashronym/src/dashronym_inline.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 final _registry = DashronymRegistry({'SDK': 'Software Development Kit'});
 
-const _extensionTheme = DashronymTheme(cardWidth: 210);
 const _themeScopeTheme = DashronymTheme(cardWidth: 220);
 const _scopeTheme = DashronymTheme(cardWidth: 230);
 const _explicitTheme = DashronymTheme(cardWidth: 240);
 
-/// Pumps [child] inside an app whose ThemeData carries [_extensionTheme].
+/// Pumps [child] inside a widgets-only app.
 Future<void> _pumpInApp(WidgetTester tester, Widget child) {
-  return tester.pumpWidget(
-    MaterialApp(
-      theme: ThemeData(extensions: const [_extensionTheme]),
-      home: Scaffold(body: Center(child: child)),
-    ),
-  );
+  return tester.pumpWidget(TestWidgetsApp(home: Center(child: child)));
 }
 
 DashronymTheme _resolvedTheme(WidgetTester tester) {
@@ -118,27 +112,26 @@ void main() {
   });
 
   group('DashronymText theme resolution', () {
-    testWidgets('uses the ThemeData extension without a theme scope', (
-      tester,
-    ) async {
+    testWidgets('uses the package defaults without any theme', (tester) async {
       await _pumpInApp(tester, DashronymText('SDK', registry: _registry));
-      expect(_resolvedTheme(tester), _extensionTheme);
+      expect(_resolvedTheme(tester), const DashronymTheme());
     });
 
-    testWidgets('prefers the theme scope over the ThemeData extension', (
-      tester,
-    ) async {
+    testWidgets('uses the nearest theme scope', (tester) async {
       await _pumpInApp(
         tester,
         DashronymThemeScope(
-          data: _themeScopeTheme,
-          child: DashronymText('SDK', registry: _registry),
+          data: _scopeTheme,
+          child: DashronymThemeScope(
+            data: _themeScopeTheme,
+            child: DashronymText('SDK', registry: _registry),
+          ),
         ),
       );
       expect(_resolvedTheme(tester), _themeScopeTheme);
     });
 
-    testWidgets('prefers DashronymScope.theme over the theme scope', (
+    testWidgets('DashronymScope.theme beats an outer theme scope', (
       tester,
     ) async {
       await _pumpInApp(
@@ -149,6 +142,40 @@ void main() {
             registry: _registry,
             theme: _scopeTheme,
             child: const DashronymText('SDK'),
+          ),
+        ),
+      );
+      expect(_resolvedTheme(tester), _scopeTheme);
+    });
+
+    testWidgets('a theme scope inside a DashronymScope beats its theme', (
+      tester,
+    ) async {
+      await _pumpInApp(
+        tester,
+        DashronymScope(
+          registry: _registry,
+          theme: _scopeTheme,
+          child: const DashronymThemeScope(
+            data: _themeScopeTheme,
+            child: DashronymText('SDK'),
+          ),
+        ),
+      );
+      expect(_resolvedTheme(tester), _themeScopeTheme);
+    });
+
+    testWidgets('a nested DashronymScope without a theme inherits one', (
+      tester,
+    ) async {
+      await _pumpInApp(
+        tester,
+        DashronymScope(
+          registry: _registry,
+          theme: _scopeTheme,
+          child: DashronymScope(
+            registry: DashronymRegistry({'API': 'Application interface'}),
+            child: const DashronymText('API'),
           ),
         ),
       );
@@ -184,5 +211,45 @@ void main() {
       );
       expect(_resolvedTheme(tester), _themeScopeTheme);
     });
+
+    testWidgets('toggling DashronymScope.theme keeps descendant state', (
+      tester,
+    ) async {
+      final probeKey = GlobalKey<_StateProbeState>();
+      Widget build(DashronymTheme? theme) => DashronymScope(
+        registry: _registry,
+        theme: theme,
+        child: Column(
+          children: [
+            _StateProbe(key: probeKey),
+            const DashronymText('SDK'),
+          ],
+        ),
+      );
+
+      await _pumpInApp(tester, build(null));
+      final state = probeKey.currentState;
+      expect(_resolvedTheme(tester), const DashronymTheme());
+
+      await _pumpInApp(tester, build(_scopeTheme));
+      expect(_resolvedTheme(tester), _scopeTheme);
+      expect(probeKey.currentState, same(state));
+
+      await _pumpInApp(tester, build(null));
+      expect(_resolvedTheme(tester), const DashronymTheme());
+      expect(probeKey.currentState, same(state));
+    });
   });
+}
+
+class _StateProbe extends StatefulWidget {
+  const _StateProbe({super.key});
+
+  @override
+  State<_StateProbe> createState() => _StateProbeState();
+}
+
+class _StateProbeState extends State<_StateProbe> {
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }

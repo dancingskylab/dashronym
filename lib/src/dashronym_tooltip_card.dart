@@ -79,7 +79,10 @@ class DashronymTooltipCard extends StatelessWidget {
         child: Padding(
           padding: theme.cardPadding,
           child: ListTile(
-            leading: Icon(theme.cardIcon, color: iconColor),
+            leading: Icon(
+              theme.cardIcon ?? Icons.info_outline,
+              color: iconColor,
+            ),
             minLeadingWidth: theme.cardMinLeadingWidth,
             title: Text(
               acronym,
@@ -96,7 +99,7 @@ class DashronymTooltipCard extends StatelessWidget {
             ),
             trailing: IconButton(
               tooltip: strings.closeButtonTooltip(acronym),
-              icon: Icon(theme.cardCloseIcon, color: iconColor),
+              icon: Icon(theme.cardCloseIcon ?? Icons.close, color: iconColor),
               onPressed: onClose,
             ),
             contentPadding: theme.cardContentPadding,

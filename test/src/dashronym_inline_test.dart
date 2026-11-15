@@ -1010,7 +1010,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(DashronymTooltipCard), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.close));
+    await tester.tap(find.byTooltip('Hide definition for SDK'));
     await tester.pumpAndSettle();
     expect(find.byType(DashronymTooltipCard), findsNothing);
   });

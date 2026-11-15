@@ -296,7 +296,7 @@ void main() {
   });
 
   testWidgets(
-    'explicit values override scope and theme extension fallbacks',
+    'explicit values override scope and app-wide theme fallbacks',
     (tester) async {
       final scopeRegistry = DashronymRegistry({
         'API': 'Scope definition',
@@ -304,7 +304,7 @@ void main() {
       final explicitRegistry = DashronymRegistry({
         'API': 'Explicit definition',
       });
-      const extensionTheme = DashronymTheme(
+      const appTheme = DashronymTheme(
         acronymStyle: TextStyle(color: Colors.red),
       );
       const scopeTheme = DashronymTheme(
@@ -316,7 +316,8 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          theme: ThemeData(extensions: const [extensionTheme]),
+          builder: (context, child) =>
+              DashronymThemeScope(data: appTheme, child: child!),
           home: Scaffold(
             body: Column(
               children: [
@@ -365,7 +366,7 @@ void main() {
                 ),
                 DashronymText(
                   'API',
-                  key: const ValueKey('extension-text'),
+                  key: const ValueKey('app-theme-text'),
                   registry: scopeRegistry,
                   config: const DashronymConfig(
                     enableBareAcronyms: true,
@@ -403,8 +404,8 @@ void main() {
         'Explicit definition',
       );
       expect(
-        inlineFor(const ValueKey('extension-text')).theme,
-        same(extensionTheme),
+        inlineFor(const ValueKey('app-theme-text')).theme,
+        same(appTheme),
       );
       expect(
         find.descendant(
