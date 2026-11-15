@@ -141,7 +141,11 @@ class DashronymTooltipOverlay extends StatelessWidget {
                   child: FadeTransition(
                     opacity: opacity,
                     child: ScaleTransition(
-                      scale: scale,
+                      // Reduce Motion asks for cross-fades instead of motion, so keep
+                      // the card at full size and let it only fade.
+                      scale: (mediaQuery?.reduceMotion ?? false)
+                          ? kAlwaysCompleteAnimation
+                          : scale,
                       child: tooltip,
                     ),
                   ),
