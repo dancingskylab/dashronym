@@ -159,34 +159,42 @@ TextDirection? _strongDirection(String text) {
 /// algorithm treats as neutral. In an Arabic paragraph that mentions
 /// "SDK and API", the placeholders would take the paragraph's direction and
 /// reverse the English run. The marks give each acronym the direction its
-/// text has, so it lays out as the plain words would.
+/// text has, so it lays out as the plain words would. Being characters, the
+/// marks also appear in copied text, as they would in bidi text typed by hand.
+///
+/// Returns [spans] itself when no acronym needs marks.
 List<InlineSpan> _withDirectionalMarks(
   List<InlineSpan> spans,
   TextDirection paragraphDirection,
 ) {
-  final marked = <InlineSpan>[];
-  for (final span in spans) {
+  List<InlineSpan>? marked;
+  for (var i = 0; i < spans.length; i++) {
+    final span = spans[i];
+    List<InlineSpan>? replacement;
     if (span case WidgetSpan(child: DashronymInline(:final acronym))) {
       final direction = _strongDirection(acronym);
       if (direction != null && direction != paragraphDirection) {
         final mark = direction == TextDirection.ltr
             ? _leftToRightMark
             : _rightToLeftMark;
-        marked.addAll([mark, span, mark]);
-        continue;
+        replacement = [mark, span, mark];
       }
     } else if (span is TextSpan && span.runtimeType == TextSpan) {
       if (span.children case final children?) {
-        marked.add(
-          _copyTextSpan(
-            span,
-            children: _withDirectionalMarks(children, paragraphDirection),
-          ),
+        final markedChildren = _withDirectionalMarks(
+          children,
+          paragraphDirection,
         );
-        continue;
+        if (!identical(markedChildren, children)) {
+          replacement = [_copyTextSpan(span, children: markedChildren)];
+        }
       }
     }
-    marked.add(span);
+    if (replacement != null) {
+      (marked ??= spans.sublist(0, i)).addAll(replacement);
+    } else {
+      marked?.add(span);
+    }
   }
-  return marked;
+  return marked ?? spans;
 }

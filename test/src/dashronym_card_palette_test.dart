@@ -148,10 +148,19 @@ void main() {
     expect(faint.surface, DashronymCardPalette.lightSurface);
     expect(faint.foreground, DashronymCardPalette.lightForeground);
 
-    // Mid grey reads as light ink but lacks contrast on the dark card.
-    final grey = await _resolve(tester, textColor: const Color(0xFF888888));
-    expect(grey.surface, DashronymCardPalette.darkSurface);
-    expect(grey.foreground, DashronymCardPalette.darkForeground);
+    // Mid grey, such as a caption, reads on either surface, so the platform
+    // brightness decides. It lacks contrast on both, so the text is neutral.
+    const grey = Color(0xFF888888);
+    final onLight = await _resolve(tester, textColor: grey);
+    expect(onLight.surface, DashronymCardPalette.lightSurface);
+    expect(onLight.foreground, DashronymCardPalette.lightForeground);
+    final onDark = await _resolve(
+      tester,
+      textColor: grey,
+      platformBrightness: Brightness.dark,
+    );
+    expect(onDark.surface, DashronymCardPalette.darkSurface);
+    expect(onDark.foreground, DashronymCardPalette.darkForeground);
   });
 
   testWidgets('icons use the ambient icon color only when it contrasts', (

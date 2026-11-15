@@ -246,6 +246,7 @@ class _DashronymInlineState extends State<DashronymInline>
   Orientation? _lastOrientation;
   Object? _viewMetrics;
   bool _triggerHasPrimaryFocus = false;
+  final FocusTraversalPolicy _traversalPolicy = OrderedTraversalPolicy();
 
   @override
   void initState() {
@@ -325,8 +326,9 @@ class _DashronymInlineState extends State<DashronymInline>
     super.didChangeMetrics();
     // Every view's metric change notifies every binding observer. In a
     // multi-window app, ignore changes that belong to other views.
+    // Without a view to compare, hide as before.
     final metrics = _currentViewMetrics();
-    if (metrics == _viewMetrics) return;
+    if (metrics != null && metrics == _viewMetrics) return;
     _viewMetrics = metrics;
     final orientation = _windowOrientation();
     if (_tooltipVisible) {
@@ -370,7 +372,10 @@ class _DashronymInlineState extends State<DashronymInline>
       view.physicalSize,
       ratio,
       EdgeInsets.fromViewPadding(view.padding, ratio),
+      EdgeInsets.fromViewPadding(view.viewPadding, ratio),
       EdgeInsets.fromViewPadding(view.viewInsets, ratio),
+      // The same list until this view's configuration changes.
+      view.displayFeatures,
     );
   }
 
@@ -735,7 +740,7 @@ class _DashronymInlineState extends State<DashronymInline>
     // Tab moves from the trigger into its open card, wherever the card sits,
     // then on to whatever follows the trigger.
     result = FocusTraversalGroup(
-      policy: OrderedTraversalPolicy(),
+      policy: _traversalPolicy,
       child: FocusTraversalOrder(
         order: const NumericFocusOrder(0),
         child: result,

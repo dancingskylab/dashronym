@@ -55,7 +55,8 @@ in apps built on `package:flutter/material.dart`, `material_ui`,
   from the body.
 - Resizing one window no longer closes cards in other windows.
 - Acronyms in mixed-direction text, such as English terms in an Arabic
-  sentence, keep the order their text would have.
+  sentence, keep the order their text would have. Such acronyms are bracketed
+  with invisible directional marks, which also appear in copied text.
 
 ## 0.2.1 - 2026-11-14
 

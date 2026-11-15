@@ -432,15 +432,19 @@ class const DashronymTheme({
         t,
       ),
       acronymStyle: TextStyle.lerp(acronymStyle, other.acronymStyle, t),
-      acronymFocusColor: Color.lerp(
+      acronymFocusColor: _lerpDerivedColor(
         acronymFocusColor,
         other.acronymFocusColor,
         t,
       ),
       cardWidth: lerpDouble(cardWidth, other.cardWidth, t)!,
       cardElevation: lerpDouble(cardElevation, other.cardElevation, t)!,
-      cardColor: Color.lerp(cardColor, other.cardColor, t),
-      cardShadowColor: Color.lerp(cardShadowColor, other.cardShadowColor, t),
+      cardColor: _lerpDerivedColor(cardColor, other.cardColor, t),
+      cardShadowColor: _lerpDerivedColor(
+        cardShadowColor,
+        other.cardShadowColor,
+        t,
+      ),
       cardBorderSide: _lerpNullableBorderSide(
         cardBorderSide,
         other.cardBorderSide,
@@ -470,7 +474,7 @@ class const DashronymTheme({
       )!,
       cardIcon: _select(cardIcon, other.cardIcon, t),
       cardCloseIcon: _select(cardCloseIcon, other.cardCloseIcon, t),
-      cardIconColor: Color.lerp(cardIconColor, other.cardIconColor, t),
+      cardIconColor: _lerpDerivedColor(cardIconColor, other.cardIconColor, t),
       cardTitleStyle: TextStyle.lerp(
         cardTitleStyle,
         other.cardTitleStyle,
@@ -583,6 +587,15 @@ class const DashronymTheme({
   static double? _lerpNullableDouble(double? begin, double? end, double t) {
     if (begin == null || end == null) return _select(begin, end, t);
     return lerpDouble(begin, end, t);
+  }
+
+  /// Lerps a color whose null value means "derive it from the host app".
+  ///
+  /// The derived color isn't known here, so while either side is null the
+  /// value switches at the midpoint instead of fading through transparent.
+  static Color? _lerpDerivedColor(Color? begin, Color? end, double t) {
+    if (begin == null || end == null) return _select(begin, end, t);
+    return Color.lerp(begin, end, t);
   }
 
   static BorderSide? _lerpNullableBorderSide(

@@ -304,6 +304,26 @@ void main() {
     expect(begin.lerp(null, 0.5), same(begin));
   });
 
+  test('DashronymTheme.lerp switches derived colors at the midpoint', () {
+    // Null means "derive from the host", so fading from it through
+    // transparent would show a see-through card mid-animation.
+    const white = Color(0xFFFFFFFF);
+    const derived = DashronymTheme();
+    const explicit = DashronymTheme(
+      acronymFocusColor: white,
+      cardColor: white,
+      cardShadowColor: white,
+      cardIconColor: white,
+    );
+    for (final (t, expected) in [(0.4, null), (0.6, white)]) {
+      final theme = derived.lerp(explicit, t);
+      expect(theme.acronymFocusColor, expected);
+      expect(theme.cardColor, expected);
+      expect(theme.cardShadowColor, expected);
+      expect(theme.cardIconColor, expected);
+    }
+  });
+
   test('DashronymTheme.lerp switches nullable borders at the midpoint', () {
     const withBorder = DashronymTheme(cardBorderSide: _outline);
     const withoutBorder = DashronymTheme();

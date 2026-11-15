@@ -123,13 +123,22 @@ class DashronymCardPalette {
   /// Relative luminance at which white and black text contrast equally.
   static const double _luminanceMidpoint = 0.179;
 
+  /// Luminance from which text reads as light ink, made for a dark host.
+  static const double _lightInkLuminance = 0.4;
+
   /// Picks a card surface that contrasts with [textColor].
   ///
-  /// Light text implies a dark host and a dark card. Without a text color,
-  /// [platformBrightness] decides; a missing brightness means light.
+  /// Dark text implies a light host and a light card; light text implies a
+  /// dark one. Without a text color, or with a mid-tone one such as a grey
+  /// caption that reads on either, [platformBrightness] decides; a missing
+  /// brightness means light.
   static Color surfaceFor(Color? textColor, Brightness? platformBrightness) {
-    if (textColor != null) {
-      return isDarkColor(textColor) ? lightSurface : darkSurface;
+    final luminance = textColor?.computeLuminance();
+    if (luminance != null && luminance < _luminanceMidpoint) {
+      return lightSurface;
+    }
+    if (luminance != null && luminance > _lightInkLuminance) {
+      return darkSurface;
     }
     return platformBrightness == Brightness.dark ? darkSurface : lightSurface;
   }
