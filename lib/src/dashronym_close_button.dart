@@ -74,7 +74,7 @@ class _DashronymCloseButtonState extends State<DashronymCloseButton> {
 
     final visual = DecoratedBox(
       decoration: BoxDecoration(
-        shape: BoxShape.circle,
+        shape: .circle,
         color: overlayOpacity == 0
             ? null
             : color.withValues(alpha: overlayOpacity),
@@ -112,7 +112,7 @@ class _DashronymCloseButtonState extends State<DashronymCloseButton> {
           onShowFocusHighlight: (value) => setState(() => _focused = value),
           onShowHoverHighlight: (value) => setState(() => _hovered = value),
           child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
+            behavior: .opaque,
             onTap: Feedback.wrapForTap(widget.onPressed, context),
             onTapDown: (_) => _setPressed(true),
             onTapUp: (_) => _setPressed(false),

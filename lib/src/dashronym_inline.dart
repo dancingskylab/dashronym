@@ -88,26 +88,21 @@ typedef DashronymTooltipBuilder = Widget Function(
 );
 
 /// Data surfaced to [DashronymTooltipBuilder] implementations.
-class DashronymTooltipDetails {
-  /// Creates tooltip metadata provided to custom tooltip builders.
-  const DashronymTooltipDetails({
-    required this.acronym,
-    required this.description,
-    required this.theme,
-    required this.hideTooltip,
-  });
-
+class const DashronymTooltipDetails({
   /// The acronym shown by the inline trigger.
-  final String acronym;
+  required final String acronym,
 
   /// The long-form description associated with [acronym].
-  final String description;
+  required final String description,
 
   /// The effective theme driving tooltip styling.
-  final DashronymTheme theme;
+  required final DashronymTheme theme,
 
   /// Callback that hides the tooltip overlay.
-  final VoidCallback hideTooltip;
+  required final VoidCallback hideTooltip,
+}) {
+  /// Creates tooltip metadata provided to custom tooltip builders.
+  this;
 }
 
 /// An inline, tappable acronym that shows an accessible tooltip card.
@@ -677,7 +672,7 @@ class _DashronymInlineState extends State<DashronymInline>
     // screen readers stop on the acronym twice.
     Widget result = GestureDetector(
       onTap: () => _interaction.handleTriggerTap(wasVisible: _tooltipVisible),
-      behavior: HitTestBehavior.opaque,
+      behavior: .opaque,
       excludeFromSemantics: true,
       child: MouseRegion(
         onEnter: widget.theme.enableHover

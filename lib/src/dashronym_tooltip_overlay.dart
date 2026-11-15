@@ -123,7 +123,7 @@ class DashronymTooltipOverlay extends StatelessWidget {
               Positioned.fill(
                 child: ExcludeSemantics(
                   child: GestureDetector(
-                    behavior: HitTestBehavior.translucent,
+                    behavior: .translucent,
                     onTap: onOutsideDismiss,
                     onSecondaryTap: onOutsideDismiss,
                   ),

@@ -39,7 +39,7 @@ class DashronymRegistry {
   DashronymRegistry._({
     required this.caseInsensitive,
     required Map<String, String> entries,
-  }) : _entries = Map<String, String>.unmodifiable(entries);
+  }) : _entries = Map<String, String>.unmodifiableOf(entries);
 
   /// Creates a registry from an iterable of acronym-description entries.
   ///

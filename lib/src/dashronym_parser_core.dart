@@ -6,21 +6,18 @@ import 'dashronym_registry.dart';
 ///
 /// This parser is responsible for locating acronyms based on [DashronymConfig]
 /// and [DashronymRegistry]. It does not know about Flutter, widgets, or spans.
-class DashronymParserCore {
-  /// Creates a core parser backed by [registry] and [config].
-  DashronymParserCore({
-    required this.registry,
-    required this.config,
-  }) : _markerPairs = _createMarkerPairs(config);
-
+class DashronymParserCore({
   /// Dictionary of acronyms and their descriptions used for matching.
-  final DashronymRegistry registry;
+  required final DashronymRegistry registry,
 
   /// Parsing options such as markers, minimum/maximum lengths, and bare acronym
   /// support.
-  final DashronymConfig config;
+  required final DashronymConfig config,
+}) {
+  /// Creates a core parser backed by [registry] and [config].
+  this;
 
-  final List<_MarkerPair> _markerPairs;
+  final List<_MarkerPair> _markerPairs = _createMarkerPairs(config);
 
   static final RegExp _bareAcronym = RegExp(r'\b([A-Z]+)\b');
 
@@ -96,13 +93,13 @@ class DashronymParserCore {
 
     flushBuffer();
 
-    return List<DashronymToken>.unmodifiable(tokens);
+    return List<DashronymToken>.unmodifiableOf(tokens);
   }
 
   static List<_MarkerPair> _createMarkerPairs(DashronymConfig config) {
     config.validate();
 
-    return List<_MarkerPair>.unmodifiable(
+    return List<_MarkerPair>.unmodifiableOf(
       config.acceptMarkers.map((pair) {
         final [left, right] = pair.runes
             .map(String.fromCharCode)
@@ -117,17 +114,11 @@ class DashronymParserCore {
   }
 }
 
-final class _MarkerPair {
-  const _MarkerPair({
-    required this.left,
-    required this.right,
-    required this.rightScalar,
-  });
-
-  final String left;
-  final String right;
-  final int rightScalar;
-
+final class const _MarkerPair({
+  required final String left,
+  required final String right,
+  required final int rightScalar,
+}) {
   _MarkerMatch? matchAsPrefix(
     String input,
     int start, {
@@ -162,9 +153,7 @@ final class _MarkerPair {
       scalar == 0x0A || scalar == 0x0D || scalar == 0x2028 || scalar == 0x2029;
 }
 
-final class _MarkerMatch {
-  const _MarkerMatch({required this.acronym, required this.end});
-
-  final String acronym;
-  final int end;
-}
+final class const _MarkerMatch({
+  required final String acronym,
+  required final int end,
+});

@@ -60,7 +60,7 @@ class DashronymConfig {
       enableBareAcronyms: enableBareAcronyms,
       minLen: minLen,
       maxLen: maxLen,
-      acceptMarkers: List<String>.unmodifiable(acceptMarkers),
+      acceptMarkers: List<String>.unmodifiableOf(acceptMarkers),
     );
     config.validate();
     return config;

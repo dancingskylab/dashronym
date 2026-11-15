@@ -36,33 +36,28 @@ import 'dashronym_tooltip_constraints.dart';
 ///   onClose: () => Navigator.of(context).maybePop(),
 /// )
 /// ```
-class DashronymTooltipCard extends StatelessWidget {
+class const DashronymTooltipCard({
+  super.key,
+
+  /// The short acronym shown as the title (e.g., `"SDK"`).
+  required final String acronym,
+
+  /// The full definition associated with [acronym].
+  required final String description,
+
+  /// The effective theme controlling spacing, radii, typography and caps.
+  required final DashronymTheme theme,
+
+  /// Invoked when the trailing close button is pressed.
+  required final VoidCallback onClose,
+
+  /// The trigger's resolved text color, used to pick a contrasting surface.
+  final Color? textColorHint,
+}) extends StatelessWidget {
   /// Creates a [DashronymTooltipCard].
   ///
   /// See the class docs for sizing rules and an example.
-  const DashronymTooltipCard({
-    super.key,
-    required this.acronym,
-    required this.description,
-    required this.theme,
-    required this.onClose,
-    this.textColorHint,
-  });
-
-  /// The short acronym shown as the title (e.g., `"SDK"`).
-  final String acronym;
-
-  /// The full definition associated with [acronym].
-  final String description;
-
-  /// The effective theme controlling spacing, radii, typography and caps.
-  final DashronymTheme theme;
-
-  /// Invoked when the trailing close button is pressed.
-  final VoidCallback onClose;
-
-  /// The trigger's resolved text color, used to pick a contrasting surface.
-  final Color? textColorHint;
+  this;
 
   /// Content widths below this hide the decorative leading glyph, so the
   /// title, description and close button keep their room.
@@ -89,7 +84,7 @@ class DashronymTooltipCard extends StatelessWidget {
         .merge(
           TextStyle(
             color: palette.foreground,
-            fontWeight: FontWeight.w700,
+            fontWeight: .w700,
             decoration: TextDecoration.none,
           ),
         )
@@ -132,15 +127,15 @@ class DashronymTooltipCard extends StatelessWidget {
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: .min,
+                          crossAxisAlignment: .start,
                           children: [
                             Text(
                               acronym,
                               style: titleStyle,
                               maxLines: 1,
                               softWrap: false,
-                              overflow: TextOverflow.ellipsis,
+                              overflow: .ellipsis,
                               textWidthBasis: TextWidthBasis.longestLine,
                             ),
                             Text(
@@ -185,7 +180,7 @@ class DashronymTooltipCard extends StatelessWidget {
         shape: shape,
         textDirection: Directionality.maybeOf(context),
       ),
-      clipBehavior: Clip.antiAlias,
+      clipBehavior: .antiAlias,
       elevation: theme.cardElevation,
       color: palette.surface,
       shadowColor: palette.shadow,

@@ -25,191 +25,159 @@ import 'package:flutter/widgets.dart';
 /// );
 /// ```
 @immutable
-class DashronymTheme {
-  static const Object _sentinel = Object();
-
-  /// Creates a theme describing trigger styling and tooltip card presentation.
-  ///
-  /// Asserts that [cardWidth] is positive and [cardElevation] is non-negative.
-  const DashronymTheme({
-    this.underline = true,
-    this.decorationStyle = TextDecorationStyle.dotted,
-    this.decorationThickness,
-    this.acronymStyle,
-    this.acronymFocusColor,
-    this.cardWidth = 320,
-    this.cardElevation = 8,
-    this.cardColor,
-    this.cardShadowColor,
-    this.cardBorderSide,
-    this.cardPadding = const EdgeInsets.all(8),
-    this.hoverShowDelay = const Duration(milliseconds: 250),
-    this.hoverHideDelay,
-    this.tooltipFadeDuration = const Duration(milliseconds: 150),
-    this.enableHover = true,
-    this.cardBorderRadius = 12,
-    this.cardIcon,
-    this.cardCloseIcon,
-    this.cardIconColor,
-    this.cardTitleStyle,
-    this.cardSubtitleStyle,
-    this.cardContentPadding = const EdgeInsets.symmetric(
-      horizontal: 8,
-      vertical: 4,
-    ),
-    this.cardMinLeadingWidth = 24,
-    this.tooltipOffset = const Offset(0, 6),
-    this.tooltipFadeInCurve = Curves.easeOut,
-    this.tooltipFadeOutCurve = Curves.easeIn,
-    this.tooltipScaleInCurve = Curves.easeOut,
-    this.tooltipScaleOutCurve = Curves.easeIn,
-    this.tooltipScaleBegin = 0.95,
-    this.tooltipScaleEnd = 1.0,
-    this.tooltipMinWidth,
-    this.tooltipMaxWidth,
-  }) : assert(cardWidth > 0, 'cardWidth must be positive.'),
-       assert(cardElevation >= 0, 'cardElevation cannot be negative.'),
-       assert(tooltipScaleBegin > 0, 'tooltipScaleBegin must be positive.'),
-       assert(
-         tooltipScaleEnd >= tooltipScaleBegin,
-         'tooltipScaleEnd must be >= tooltipScaleBegin.',
-       ),
-       assert(
-         tooltipMinWidth == null || tooltipMinWidth >= 0,
-         'tooltipMinWidth cannot be negative.',
-       ),
-       assert(
-         tooltipMaxWidth == null || tooltipMaxWidth > 0,
-         'tooltipMaxWidth must be positive when provided.',
-       ),
-       assert(
-         tooltipMinWidth == null ||
-             tooltipMaxWidth == null ||
-             tooltipMinWidth <= tooltipMaxWidth,
-         'tooltipMinWidth must be <= tooltipMaxWidth.',
-       );
-
+class const DashronymTheme({
   /// Whether matched acronyms are underlined in the inline trigger.
-  final bool underline;
+  final bool underline = true,
 
   /// The [TextDecorationStyle] used when [underline] is `true`.
-  final TextDecorationStyle decorationStyle;
+  final TextDecorationStyle decorationStyle = TextDecorationStyle.dotted,
 
   /// The underline thickness; when `null`, the base text style decides.
-  final double? decorationThickness;
+  final double? decorationThickness,
 
   /// Style override for the inline acronym text (e.g., weight or color).
-  final TextStyle? acronymStyle;
+  final TextStyle? acronymStyle,
 
   /// Background highlight painted behind a keyboard-focused acronym.
   ///
   /// When `null`, the trigger's text color at 12% opacity is used, or 24%
   /// when the platform requests high contrast.
-  final Color? acronymFocusColor;
+  final Color? acronymFocusColor,
 
   /// Maximum width of the tooltip card in logical pixels.
-  final double cardWidth;
+  final double cardWidth = 320,
 
   /// Shadow elevation of the tooltip card surface.
-  final double cardElevation;
+  final double cardElevation = 8,
 
   /// Background color of the tooltip card.
   ///
   /// When `null`, a light or dark neutral surface is chosen to contrast with
   /// the ambient text color, falling back to the platform brightness.
-  final Color? cardColor;
+  final Color? cardColor,
 
   /// Color of the card's elevation shadow; black when `null`.
-  final Color? cardShadowColor;
+  final Color? cardShadowColor,
 
   /// Outline drawn around the tooltip card.
   ///
   /// When `null`, the card has no outline unless the platform requests high
   /// contrast, in which case a 1 px outline in the card's text color is drawn.
-  final BorderSide? cardBorderSide;
+  final BorderSide? cardBorderSide,
 
   /// Inner padding for the tooltip card's content area.
-  final EdgeInsets cardPadding;
+  final EdgeInsets cardPadding = const EdgeInsets.all(8),
 
   /// Delay before showing the tooltip when the pointer hovers the trigger.
-  final Duration hoverShowDelay;
+  final Duration hoverShowDelay = const Duration(milliseconds: 250),
 
   /// Delay before hiding after the pointer leaves the trigger.
   ///
   /// If `null`, defaults to [hoverShowDelay].
-  final Duration? hoverHideDelay;
+  final Duration? hoverHideDelay,
 
   /// Duration of the tooltip's fade in/out animation.
-  final Duration tooltipFadeDuration;
+  final Duration tooltipFadeDuration = const Duration(milliseconds: 150),
 
   /// Enables hover-triggered behavior on desktop/web when `true`.
-  final bool enableHover;
+  final bool enableHover = true,
 
   /// Corner radius for the tooltip card's rounded rectangle.
-  final double cardBorderRadius;
+  final double cardBorderRadius = 12,
 
   /// Leading icon displayed inside the tooltip card.
   ///
   /// When `null`, a built-in information glyph is painted, which needs no
   /// icon font. Supply an icon from your design system to replace it, such as
   /// `Icons.info_outline` or `CupertinoIcons.info`.
-  final IconData? cardIcon;
+  final IconData? cardIcon,
 
   /// Icon used by the tooltip card's close button.
   ///
   /// When `null`, a built-in close glyph is painted, which needs no icon font.
-  final IconData? cardCloseIcon;
+  final IconData? cardCloseIcon,
 
   /// Color applied to icons inside the tooltip card.
   ///
   /// When `null`, the ambient [IconTheme] color is used if it contrasts with
   /// the card surface, otherwise the card's text color.
-  final Color? cardIconColor;
+  final Color? cardIconColor,
 
   /// Text style for the acronym title in the card.
   ///
   /// Merged over a bold version of the ambient [DefaultTextStyle].
-  final TextStyle? cardTitleStyle;
+  final TextStyle? cardTitleStyle,
 
   /// Text style for the description subtitle in the card.
   ///
   /// Merged over the ambient [DefaultTextStyle].
-  final TextStyle? cardSubtitleStyle;
+  final TextStyle? cardSubtitleStyle,
 
   /// Extra padding applied around the card's content row.
-  final EdgeInsets cardContentPadding;
+  final EdgeInsets cardContentPadding = const EdgeInsets.symmetric(
+    horizontal: 8,
+    vertical: 4,
+  ),
 
   /// Minimum width reserved for the card's leading widget.
-  final double cardMinLeadingWidth;
+  final double cardMinLeadingWidth = 24,
 
   /// Offset of the tooltip relative to the inline trigger's origin.
-  final Offset tooltipOffset;
+  final Offset tooltipOffset = const Offset(0, 6),
 
   /// Curve used when fading the tooltip into view.
-  final Curve tooltipFadeInCurve;
+  final Curve tooltipFadeInCurve = Curves.easeOut,
 
   /// Curve used when fading the tooltip out of view.
-  final Curve tooltipFadeOutCurve;
+  final Curve tooltipFadeOutCurve = Curves.easeIn,
 
   /// Curve used when scaling the tooltip into view.
-  final Curve tooltipScaleInCurve;
+  final Curve tooltipScaleInCurve = Curves.easeOut,
 
   /// Curve used when scaling the tooltip out of view.
-  final Curve tooltipScaleOutCurve;
+  final Curve tooltipScaleOutCurve = Curves.easeIn,
 
   /// Starting scale factor applied to the tooltip during the show animation.
-  final double tooltipScaleBegin;
+  final double tooltipScaleBegin = 0.95,
 
   /// Ending scale factor applied to the tooltip during the show animation.
-  final double tooltipScaleEnd;
+  final double tooltipScaleEnd = 1.0,
 
   /// Minimum width constraint applied to the tooltip card.
-  final double? tooltipMinWidth;
+  final double? tooltipMinWidth,
 
   /// Maximum width constraint applied to the tooltip card.
   ///
   /// Falls back to [cardWidth] when `null`.
-  final double? tooltipMaxWidth;
+  final double? tooltipMaxWidth,
+}) {
+  static const Object _sentinel = Object();
+
+  /// Creates a theme describing trigger styling and tooltip card presentation.
+  ///
+  /// Asserts that [cardWidth] is positive and [cardElevation] is non-negative.
+  this
+    : assert(cardWidth > 0, 'cardWidth must be positive.'),
+      assert(cardElevation >= 0, 'cardElevation cannot be negative.'),
+      assert(tooltipScaleBegin > 0, 'tooltipScaleBegin must be positive.'),
+      assert(
+        tooltipScaleEnd >= tooltipScaleBegin,
+        'tooltipScaleEnd must be >= tooltipScaleBegin.',
+      ),
+      assert(
+        tooltipMinWidth == null || tooltipMinWidth >= 0,
+        'tooltipMinWidth cannot be negative.',
+      ),
+      assert(
+        tooltipMaxWidth == null || tooltipMaxWidth > 0,
+        'tooltipMaxWidth must be positive when provided.',
+      ),
+      assert(
+        tooltipMinWidth == null ||
+            tooltipMaxWidth == null ||
+            tooltipMinWidth <= tooltipMaxWidth,
+        'tooltipMinWidth must be <= tooltipMaxWidth.',
+      );
 
   /// Creates a copy with the provided fields replaced.
   ///
