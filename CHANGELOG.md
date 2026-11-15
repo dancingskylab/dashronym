@@ -1,3 +1,62 @@
+## 0.3.0 - 2026-11-14
+
+Dashronym now depends only on Flutter's widgets library, so it works the same
+in apps built on `package:flutter/material.dart`, `material_ui`,
+`cupertino_ui` or their own design system. See the
+[migration guide](MIGRATION.md#02x-to-030).
+
+### Breaking
+
+- Requires Dart 3.14 and Flutter 3.50. Apps on older Flutter releases can keep
+  using 0.2.x.
+- `DashronymTheme` is no longer a `ThemeExtension`, and Dashronym no longer
+  reads `ThemeData.extensions`. Provide app-wide themes with
+  `DashronymThemeScope`.
+- The stock card is built from widgets primitives instead of Material widgets.
+  Colors the theme leaves unset come from the host app's text color, icon
+  theme, platform brightness and contrast settings. The example's Material
+  recipe restores the 0.2 look.
+- `DashronymTheme.cardIcon` and `cardCloseIcon` are nullable and default to
+  painted glyphs instead of `Icons.info_outline` and `Icons.close`.
+- The nearest `DashronymScope` theme or `DashronymThemeScope` now wins, and a
+  `DashronymScope` without a theme inherits the theme of an enclosing scope.
+
+### Added
+
+- Added `cardColor`, `cardShadowColor`, `cardBorderSide` and
+  `acronymFocusColor` to `DashronymTheme`.
+- Added `hyphens` to `DashronymText`, `DashronymText.rich` and
+  `Text.dashronyms()`, as on `Text`.
+- Screen readers get expand and collapse actions on each acronym.
+- With Reduce Motion on, cards fade in without scaling.
+- With high contrast on, cards get an outline, and the acronym's focus
+  highlight and the close button's focus ring get stronger.
+- Added an example app with Material, Cupertino and widgets-only hosts, theme
+  recipes for Material and Cupertino, and widget previews.
+
+### Changed
+
+- The close button shows a hover and press tint and a focus ring, has a 48 by
+  48 target on every platform, and closes its tooltip before the card on
+  Escape.
+- Tab moves from an acronym into its open card, then on to the next control,
+  wherever the card is placed.
+- `DashronymText` applies the text-spacing overrides that platforms such as the
+  web publish through `MediaQuery`, as `Text` does.
+
+### Fixed
+
+- Each acronym is a single screen-reader node. Before, a second focusable node
+  repeated the label, so screen readers could stop on an acronym twice.
+- Screen readers read an open card right after its acronym.
+- Tab no longer skips an acronym's open card, and on the web, Tab reaches the
+  card instead of leaving the page.
+- Cards avoid the keyboard and status bar when a scaffold removes those insets
+  from the body.
+- Resizing one window no longer closes cards in other windows.
+- Acronyms in mixed-direction text, such as English terms in an Arabic
+  sentence, keep the order their text would have.
+
 ## 0.2.1 - 2026-11-14
 
 ### Added
