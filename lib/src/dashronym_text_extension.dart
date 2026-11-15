@@ -39,6 +39,7 @@ extension DashronymTextExtension on Text {
     String? semanticsIdentifier,
     TextWidthBasis? textWidthBasis,
     TextHeightBehavior? textHeightBehavior,
+    Hyphens? hyphens,
     TextScaler? textScaler,
     Color? selectionColor,
   }) {
@@ -63,6 +64,7 @@ extension DashronymTextExtension on Text {
         semanticsIdentifier: semanticsIdentifier ?? this.semanticsIdentifier,
         textWidthBasis: textWidthBasis ?? this.textWidthBasis,
         textHeightBehavior: textHeightBehavior ?? this.textHeightBehavior,
+        hyphens: hyphens ?? this.hyphens,
         selectionColor: selectionColor ?? this.selectionColor,
       );
     }
@@ -87,6 +89,7 @@ extension DashronymTextExtension on Text {
       semanticsIdentifier: semanticsIdentifier ?? this.semanticsIdentifier,
       textWidthBasis: textWidthBasis ?? this.textWidthBasis,
       textHeightBehavior: textHeightBehavior ?? this.textHeightBehavior,
+      hyphens: hyphens ?? this.hyphens,
       selectionColor: selectionColor ?? this.selectionColor,
     );
   }

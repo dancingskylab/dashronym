@@ -60,6 +60,7 @@ class DashronymText extends StatelessWidget {
     this.semanticsIdentifier,
     this.textWidthBasis,
     this.textHeightBehavior,
+    this.hyphens,
     this.selectionColor,
   }) : inlineSpan = null;
 
@@ -93,6 +94,7 @@ class DashronymText extends StatelessWidget {
     this.semanticsIdentifier,
     this.textWidthBasis,
     this.textHeightBehavior,
+    this.hyphens,
     this.selectionColor,
   }) : text = '',
        inlineSpan = textSpan;
@@ -177,6 +179,11 @@ class DashronymText extends StatelessWidget {
 
   /// Text height behavior override.
   final TextHeightBehavior? textHeightBehavior;
+
+  /// How to hyphenate words that break across lines.
+  ///
+  /// If null, [Hyphens.manual] is used, as with [Text].
+  final Hyphens? hyphens;
 
   /// Selection highlight color.
   final Color? selectionColor;
@@ -274,6 +281,11 @@ class DashronymText extends StatelessWidget {
           : spans.map(_withoutPlainTextSemantics).toList(),
     );
 
+    // Honor the text-spacing overrides that web accessibility settings
+    // publish through MediaQuery, as Text does. Each acronym trigger is a Text
+    // and applies them itself.
+    final spacingOverride = _textSpacingOverride(context);
+
     Widget result = RichText(
       textAlign: effectiveTextAlign,
       textDirection: effectiveTextDirection,
@@ -282,12 +294,17 @@ class DashronymText extends StatelessWidget {
       overflow: effectiveOverflow,
       textScaler: effectiveTextScaler,
       maxLines: effectiveMaxLines,
-      strutStyle: strutStyle,
+      strutStyle: strutStyle?.merge(
+        StrutStyle(height: spacingOverride?.height),
+      ),
       textWidthBasis: effectiveTextWidthBasis,
       textHeightBehavior: effectiveTextHeightBehavior,
+      hyphens: hyphens ?? Hyphens.manual,
       selectionRegistrar: selectionRegistrar,
       selectionColor: effectiveSelectionColor,
-      text: textSpan,
+      text: spacingOverride == null
+          ? textSpan
+          : _withTextSpacing(textSpan, spacingOverride),
     );
 
     // Keep the original scaler ambient for tooltip content and direct child
@@ -326,4 +343,43 @@ class DashronymText extends StatelessWidget {
 
     return result;
   }
+}
+
+/// The text-spacing overrides from [MediaQuery] as a style, or null when none
+/// are set.
+TextStyle? _textSpacingOverride(BuildContext context) {
+  final height = MediaQuery.maybeLineHeightScaleFactorOverrideOf(context);
+  final letterSpacing = MediaQuery.maybeLetterSpacingOverrideOf(context);
+  final wordSpacing = MediaQuery.maybeWordSpacingOverrideOf(context);
+  if (height == null && letterSpacing == null && wordSpacing == null) {
+    return null;
+  }
+  return TextStyle(
+    height: height,
+    letterSpacing: letterSpacing,
+    wordSpacing: wordSpacing,
+  );
+}
+
+/// Merges [override] into [span] and its plain text descendants, as [Text]
+/// does. Widget spans keep their own styling.
+TextSpan _withTextSpacing(TextSpan span, TextStyle override) {
+  return TextSpan(
+    text: span.text,
+    children: span.children?.map((child) {
+      if (child is TextSpan && child.runtimeType == TextSpan) {
+        return _withTextSpacing(child, override);
+      }
+      return child;
+    }).toList(),
+    style: span.style?.merge(override) ?? override,
+    recognizer: span.recognizer,
+    mouseCursor: span.mouseCursor,
+    onEnter: span.onEnter,
+    onExit: span.onExit,
+    semanticsLabel: span.semanticsLabel,
+    semanticsIdentifier: span.semanticsIdentifier,
+    locale: span.locale,
+    spellOut: span.spellOut,
+  );
 }
