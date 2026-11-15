@@ -173,6 +173,12 @@ Prefer `DashronymThemeScope` to `ThemeData.extensions`. Flutter's standalone
 `package:flutter/material.dart`, so a theme extension registered with one is
 invisible to the other. Dashronym 0.3.0 stops reading `ThemeData.extensions`.
 
+In 0.2.x the stock card still takes its surface color, and any icon color or
+text styles the theme leaves unset, from the `package:flutter/material.dart`
+theme. Apps on the standalone `material_ui` package can set `cardIconColor`,
+`cardTitleStyle` and `cardSubtitleStyle` explicitly, or use a custom
+`tooltipBuilder`.
+
 ## Custom tooltip content
 
 Use `tooltipBuilder` when the definition needs an application-owned surface:

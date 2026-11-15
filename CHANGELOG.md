@@ -3,10 +3,10 @@
 ### Added
 
 - Added `DashronymThemeScope`, an inherited theme that provides a
-  `DashronymTheme` to a subtree in any app, including apps on Flutter's
-  standalone `material_ui` package. Install it once, for example in
-  `MaterialApp.builder`, to prepare for 0.3.0, which stops reading
-  `ThemeData.extensions`.
+  `DashronymTheme` to a subtree without `ThemeData.extensions`, so it also
+  reaches Dashronym widgets in apps on Flutter's standalone `material_ui`
+  package. Install it once, for example in `MaterialApp.builder`, to prepare
+  for 0.3.0, which stops reading `ThemeData.extensions`.
 
 ### Fixed
 
@@ -14,10 +14,12 @@
   longer freezes focus there. `Tab`/`Shift+Tab` now escape the tooltip and
   continue to the next trigger, wrapping back to the first one at the end.
 - Escape on an open tooltip no longer also closes an enclosing dialog or
-  route.
+  route. Like Flutter's own tooltips, the tooltip consumes that key press.
 - Escape now reaches an enclosing dialog or route when a focused acronym's
-  tooltip is already closed.
+  tooltip is already closed, or when a newer route covers the acronym.
 - Enter now opens and closes a focused acronym on the web.
+- Activating a focusable control inside a custom tooltip no longer closes
+  the tooltip.
 
 ### Changed
 
