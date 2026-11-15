@@ -1025,12 +1025,11 @@ void main() {
   testWidgets('DashronymInline hides tooltip on orientation change', (
     tester,
   ) async {
-    final binding = tester.binding;
-
-    await binding.setSurfaceSize(const Size(360, 640));
-    addTearDown(() async {
-      await binding.setSurfaceSize(null);
-    });
+    // Rotate the window itself: a surface-size override leaves the view's
+    // metrics alone, so it doesn't count as this view changing.
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(360, 640);
+    addTearDown(tester.view.reset);
 
     await tester.pumpWidget(
       _testHarness(
@@ -1047,8 +1046,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(DashronymTooltipCard), findsOneWidget);
 
-    await binding.setSurfaceSize(const Size(640, 360));
-    binding.handleMetricsChanged();
+    tester.view.physicalSize = const Size(640, 360);
     await tester.pump();
     await tester.pumpAndSettle();
 

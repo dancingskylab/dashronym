@@ -248,6 +248,7 @@ class _DashronymInlineState extends State<DashronymInline>
   bool _isDisposing = false;
   int _visibilityGeneration = 0;
   Orientation? _lastOrientation;
+  Object? _viewMetrics;
 
   @override
   void initState() {
@@ -321,6 +322,11 @@ class _DashronymInlineState extends State<DashronymInline>
   @override
   void didChangeMetrics() {
     super.didChangeMetrics();
+    // Every view's metric change notifies every binding observer. In a
+    // multi-window app, ignore changes that belong to other views.
+    final metrics = _currentViewMetrics();
+    if (metrics == _viewMetrics) return;
+    _viewMetrics = metrics;
     final orientation = _windowOrientation();
     if (_tooltipVisible) {
       _hide(immediate: true);
@@ -343,6 +349,7 @@ class _DashronymInlineState extends State<DashronymInline>
       _tooltipController?.release(this);
       _tooltipController = nextTooltipController;
     }
+    _viewMetrics = _currentViewMetrics();
     final orientation = MediaQuery.maybeOf(context)?.orientation;
     if (orientation != null && _lastOrientation != orientation) {
       if (_lastOrientation != null) {
@@ -351,6 +358,19 @@ class _DashronymInlineState extends State<DashronymInline>
       _lastOrientation = orientation;
     }
     _attachScrollListener();
+  }
+
+  /// The metrics of this trigger's view that affect where its card goes.
+  Object? _currentViewMetrics() {
+    final view = View.maybeOf(context);
+    if (view == null) return null;
+    final ratio = view.devicePixelRatio;
+    return (
+      view.physicalSize,
+      ratio,
+      EdgeInsets.fromViewPadding(view.padding, ratio),
+      EdgeInsets.fromViewPadding(view.viewInsets, ratio),
+    );
   }
 
   Orientation? _windowOrientation() {
