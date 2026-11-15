@@ -82,14 +82,18 @@ class DashronymTooltipOverlay extends StatelessWidget {
     BuildContext overlayContext,
     OverlayChildLayoutInfo layoutInfo,
   ) {
-    final triggerMediaQuery = MediaQuery.maybeOf(triggerContext);
+    // The overlay context carries the trigger's MediaQuery with the overlay's
+    // own padding and view insets (Flutter 3.44+). Prefer it: a scaffold
+    // strips the keyboard inset and status bar padding from its body, so the
+    // trigger's MediaQuery would let the card slide under them.
+    final mediaQuery = MediaQuery.maybeOf(overlayContext);
     final anchorRect = MatrixUtils.transformRect(
       layoutInfo.childPaintTransform,
       Offset.zero & layoutInfo.childSize,
     );
     final tooltip = DashronymTooltipViewport(
       theme: theme,
-      mediaQuery: triggerMediaQuery,
+      mediaQuery: mediaQuery,
       makeScrollable: makeScrollable,
       child: tooltipBuilder(overlayContext),
     );
@@ -125,8 +129,8 @@ class DashronymTooltipOverlay extends StatelessWidget {
                 delegate: DashronymTooltipLayoutDelegate(
                   anchorRect: anchorRect,
                   theme: theme,
-                  padding: triggerMediaQuery?.padding ?? EdgeInsets.zero,
-                  keyboardInset: triggerMediaQuery?.viewInsets.bottom ?? 0.0,
+                  padding: mediaQuery?.padding ?? EdgeInsets.zero,
+                  keyboardInset: mediaQuery?.viewInsets.bottom ?? 0.0,
                   direction: Directionality.of(triggerContext),
                   viewportMargin: DashronymTooltipConstraints.outerGutter,
                 ),
@@ -148,9 +152,6 @@ class DashronymTooltipOverlay extends StatelessWidget {
         ),
       ),
     );
-    if (triggerMediaQuery != null) {
-      result = MediaQuery(data: triggerMediaQuery, child: result);
-    }
     // The layout-builder portal provides root-overlay constraints even when
     // the source lives in a tightly constrained WidgetSpan.
     return Positioned.fill(child: result);

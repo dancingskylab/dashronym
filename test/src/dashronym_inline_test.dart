@@ -96,12 +96,11 @@ void main() {
   testWidgets('Tooltip repositions to remain within the viewport', (
     tester,
   ) async {
-    final view = tester.view;
-    final originalLogicalSize = view.physicalSize / view.devicePixelRatio;
-
+    // Passing null clears the override; a stored size would leak into later
+    // tests that resize the window.
     await tester.binding.setSurfaceSize(const Size(220, 320));
     addTearDown(() async {
-      await tester.binding.setSurfaceSize(originalLogicalSize);
+      await tester.binding.setSurfaceSize(null);
     });
 
     await tester.pumpWidget(
@@ -121,7 +120,7 @@ void main() {
     final cardFinder = find.byType(DashronymTooltipCard);
     expect(cardFinder, findsOneWidget);
 
-    final screenSize = view.physicalSize / view.devicePixelRatio;
+    const screenSize = Size(220, 320);
     final topLeft = tester.getTopLeft(cardFinder);
     final topRight = tester.getTopRight(cardFinder);
     final bottomLeft = tester.getBottomLeft(cardFinder);
@@ -681,12 +680,12 @@ void main() {
   testWidgets('long large-scale tooltip avoids safe areas and keyboard', (
     tester,
   ) async {
-    final originalLogicalSize =
-        tester.view.physicalSize / tester.view.devicePixelRatio;
-    await tester.binding.setSurfaceSize(const Size(280, 320));
-    addTearDown(
-      () => tester.binding.setSurfaceSize(originalLogicalSize),
-    );
+    // Safe areas and the keyboard come from the window, as in a real app.
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(280, 320);
+    tester.view.padding = const FakeViewPadding(top: 20, bottom: 20);
+    tester.view.viewInsets = const FakeViewPadding(bottom: 100);
+    addTearDown(tester.view.reset);
     final description = List.filled(
       20,
       'A long accessibility-aware definition.',
@@ -694,18 +693,18 @@ void main() {
 
     await tester.pumpWidget(
       _testHarness(
-        MediaQuery(
-          data: const MediaQueryData(
-            size: Size(280, 320),
-            padding: EdgeInsets.symmetric(vertical: 20),
-            viewInsets: EdgeInsets.only(bottom: 100),
-            textScaler: TextScaler.linear(3),
-          ),
-          child: DashronymInline(
-            acronym: 'A11Y',
-            description: description,
-            theme: _theme(),
-            textStyle: const TextStyle(),
+        Builder(
+          // The overlay inherits the trigger's text scale.
+          builder: (context) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(3)),
+            child: DashronymInline(
+              acronym: 'A11Y',
+              description: description,
+              theme: _theme(),
+              textStyle: const TextStyle(),
+            ),
           ),
         ),
       ),
@@ -1027,12 +1026,10 @@ void main() {
     tester,
   ) async {
     final binding = tester.binding;
-    final view = tester.view;
-    final originalLogicalSize = view.physicalSize / view.devicePixelRatio;
 
     await binding.setSurfaceSize(const Size(360, 640));
     addTearDown(() async {
-      await binding.setSurfaceSize(originalLogicalSize);
+      await binding.setSurfaceSize(null);
     });
 
     await tester.pumpWidget(
