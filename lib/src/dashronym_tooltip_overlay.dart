@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter/services.dart';
 
 import 'dashronym_theme.dart';
 import 'dashronym_tooltip_constraints.dart';
@@ -95,59 +94,57 @@ class DashronymTooltipOverlay extends StatelessWidget {
       child: tooltipBuilder(overlayContext),
     );
 
-    Widget result = Shortcuts(
-      shortcuts: const <ShortcutActivator, Intent>{
-        SingleActivator(LogicalKeyboardKey.escape): DismissIntent(),
+    // Escape is handled by DashronymInline's early key handler while the
+    // tooltip is visible. This action serves DismissIntent from other
+    // shortcuts, restoring focus to the trigger.
+    Widget result = Actions(
+      actions: <Type, Action<Intent>>{
+        DismissIntent: CallbackAction<DismissIntent>(
+          onInvoke: (_) {
+            onDismiss();
+            return null;
+          },
+        ),
       },
-      child: Actions(
-        actions: <Type, Action<Intent>>{
-          DismissIntent: CallbackAction<DismissIntent>(
-            onInvoke: (_) {
-              onDismiss();
-              return null;
-            },
-          ),
-        },
-        child: FocusScope(
-          node: tooltipFocusScope,
-          onFocusChange: onTooltipFocusChange,
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: ExcludeSemantics(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.translucent,
-                    onTap: onOutsideDismiss,
-                    onSecondaryTap: onOutsideDismiss,
-                  ),
+      child: FocusScope(
+        node: tooltipFocusScope,
+        onFocusChange: onTooltipFocusChange,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: ExcludeSemantics(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: onOutsideDismiss,
+                  onSecondaryTap: onOutsideDismiss,
                 ),
               ),
-              Positioned.fill(
-                child: CustomSingleChildLayout(
-                  delegate: DashronymTooltipLayoutDelegate(
-                    anchorRect: anchorRect,
-                    theme: theme,
-                    padding: triggerMediaQuery?.padding ?? EdgeInsets.zero,
-                    keyboardInset: triggerMediaQuery?.viewInsets.bottom ?? 0.0,
-                    direction: Directionality.of(triggerContext),
-                    viewportMargin: DashronymTooltipConstraints.outerGutter,
-                  ),
-                  child: MouseRegion(
-                    opaque: false,
-                    onEnter: theme.enableHover ? (_) => onTooltipEnter() : null,
-                    onExit: theme.enableHover ? (_) => onTooltipExit() : null,
-                    child: FadeTransition(
-                      opacity: opacity,
-                      child: ScaleTransition(
-                        scale: scale,
-                        child: tooltip,
-                      ),
+            ),
+            Positioned.fill(
+              child: CustomSingleChildLayout(
+                delegate: DashronymTooltipLayoutDelegate(
+                  anchorRect: anchorRect,
+                  theme: theme,
+                  padding: triggerMediaQuery?.padding ?? EdgeInsets.zero,
+                  keyboardInset: triggerMediaQuery?.viewInsets.bottom ?? 0.0,
+                  direction: Directionality.of(triggerContext),
+                  viewportMargin: DashronymTooltipConstraints.outerGutter,
+                ),
+                child: MouseRegion(
+                  opaque: false,
+                  onEnter: theme.enableHover ? (_) => onTooltipEnter() : null,
+                  onExit: theme.enableHover ? (_) => onTooltipExit() : null,
+                  child: FadeTransition(
+                    opacity: opacity,
+                    child: ScaleTransition(
+                      scale: scale,
+                      child: tooltip,
                     ),
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

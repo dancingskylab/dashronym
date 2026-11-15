@@ -232,6 +232,12 @@ class _DashronymInlineState extends State<DashronymInline>
   late CurvedAnimation _opacity;
   late CurvedAnimation _scaleCurve;
   late Animation<double> _scale;
+  late final Map<Type, Action<Intent>> _activateActions = {
+    ActivateIntent: _TriggerActivateAction<ActivateIntent>(this),
+    // The web maps Enter to ButtonActivateIntent rather than ActivateIntent,
+    // so handle both, as Flutter's own buttons do.
+    ButtonActivateIntent: _TriggerActivateAction<ButtonActivateIntent>(this),
+  };
   late final OnKeyEventCallback _earlyEscapeHandler = _handleEarlyEscape;
   late final KeyEventCallback _unfocusedEscapeHandler = _handleUnfocusedEscape;
   bool _keyboardHandlerRegistered = false;
@@ -406,9 +412,13 @@ class _DashronymInlineState extends State<DashronymInline>
   }
 
   bool _dismissesOnEscape(KeyEvent event) {
-    return event is KeyDownEvent &&
+    return (event is KeyDownEvent || event is KeyRepeatEvent) &&
         event.logicalKey == LogicalKeyboardKey.escape &&
-        _tooltipVisible;
+        _tooltipVisible &&
+        mounted &&
+        // Leave Escape to a newer route, such as a dialog or menu, that now
+        // covers the trigger while its tooltip is still on its way out.
+        (ModalRoute.isCurrentOf(context) ?? true);
   }
 
   /// Dismisses a visible tooltip before the focus tree sees Escape.
@@ -656,26 +666,12 @@ class _DashronymInlineState extends State<DashronymInline>
           _showFocusHighlight = show;
         });
       },
-      shortcuts: const <ShortcutActivator, Intent>{
-        SingleActivator(LogicalKeyboardKey.escape): DismissIntent(),
-      },
       actions: <Type, Action<Intent>>{
-        ActivateIntent: CallbackAction<Intent>(
-          onInvoke: (_) {
-            _toggle();
-            return null;
-          },
-        ),
-        // The web maps Enter to ButtonActivateIntent rather than
-        // ActivateIntent, so handle both, as Flutter's own buttons do.
-        ButtonActivateIntent: CallbackAction<Intent>(
-          onInvoke: (_) {
-            _toggle();
-            return null;
-          },
-        ),
-        // Only claim Escape while there is a tooltip to dismiss. Otherwise
-        // the intent must reach enclosing routes, such as a dialog.
+        ..._activateActions,
+        // Escape itself is handled by the early key handler while a tooltip
+        // is visible; this action serves DismissIntent from other shortcuts.
+        // Claim it only while there is a tooltip to dismiss, so the intent
+        // otherwise reaches enclosing routes, such as a dialog.
         if (_tooltipVisible)
           DismissIntent: CallbackAction<Intent>(
             onInvoke: (_) {
@@ -718,5 +714,27 @@ class _DashronymInlineState extends State<DashronymInline>
       onTap: _toggle,
       child: result,
     );
+  }
+}
+
+/// Toggles a trigger's tooltip from an activation intent, but only while the
+/// trigger itself has primary focus.
+///
+/// Tooltip content is built in the trigger's context and inherits its actions.
+/// Without this guard, an activation intent from a focusable inside a custom
+/// tooltip would bubble up and close the tooltip under the user's focus.
+class _TriggerActivateAction<T extends Intent> extends Action<T> {
+  _TriggerActivateAction(this._state);
+
+  final _DashronymInlineState _state;
+
+  @override
+  bool isEnabled(T intent) =>
+      _state._interaction.triggerFocusNode.hasPrimaryFocus;
+
+  @override
+  Object? invoke(T intent) {
+    _state._toggle();
+    return null;
   }
 }

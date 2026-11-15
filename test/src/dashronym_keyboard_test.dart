@@ -1,4 +1,5 @@
 // Keyboard interaction between Dashronym tooltips and enclosing routes.
+import 'dart:async';
 import 'dart:ui' show PointerDeviceKind;
 
 import 'package:dashronym/dashronym.dart';
@@ -184,5 +185,96 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pumpAndSettle();
     expect(find.byType(DashronymTooltipCard), findsOneWidget);
+  });
+
+  testWidgets('Escape reaches a newer route while an older card is visible', (
+    tester,
+  ) async {
+    late BuildContext pageContext;
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: const [DashronymLocalizations.delegate],
+        home: Scaffold(
+          body: Builder(
+            builder: (context) {
+              pageContext = context;
+              return const Center(
+                child: DashronymInline(
+                  acronym: 'SDK',
+                  description: 'Software Development Kit',
+                  // Keep the hover-opened card visible after a route covers
+                  // the trigger.
+                  theme: DashronymTheme(
+                    hoverShowDelay: Duration.zero,
+                    hoverHideDelay: Duration(seconds: 5),
+                  ),
+                  textStyle: TextStyle(),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+    final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await gesture.addPointer(location: Offset.zero);
+    addTearDown(gesture.removePointer);
+    await gesture.moveTo(tester.getCenter(find.text('SDK')));
+    await tester.pumpAndSettle();
+    expect(find.byType(DashronymTooltipCard), findsOneWidget);
+
+    unawaited(
+      showDialog<void>(
+        context: pageContext,
+        builder: (_) => const Dialog(child: Text('Newer route')),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Newer route'), findsOneWidget);
+    expect(find.byType(DashronymTooltipCard), findsOneWidget);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(find.text('Newer route'), findsNothing);
+
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('activating a non-button focusable inside a custom tooltip '
+      'leaves the tooltip open', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: const [DashronymLocalizations.delegate],
+        home: Scaffold(
+          body: Center(
+            child: DashronymInline(
+              acronym: 'SDK',
+              description: 'Software Development Kit',
+              theme: const DashronymTheme(enableHover: false),
+              textStyle: const TextStyle(),
+              tooltipBuilder: (context, details) =>
+                  const Focus(child: Text('Read more')),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pumpAndSettle();
+    expect(find.text('Read more'), findsOneWidget);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    final inner = FocusManager.instance.primaryFocus;
+    expect(inner?.debugLabel, isNot('DashronymInline'));
+
+    for (final key in [LogicalKeyboardKey.enter, LogicalKeyboardKey.space]) {
+      await tester.sendKeyEvent(key);
+      await tester.pumpAndSettle();
+      expect(find.text('Read more'), findsOneWidget, reason: '$key');
+      expect(FocusManager.instance.primaryFocus, same(inner), reason: '$key');
+    }
   });
 }
