@@ -33,7 +33,8 @@ library;
 
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show internal;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, internal;
 import 'package:flutter/widgets.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
@@ -249,6 +250,7 @@ class _DashronymInlineState extends State<DashronymInline>
   int _visibilityGeneration = 0;
   Orientation? _lastOrientation;
   Object? _viewMetrics;
+  bool _triggerHasPrimaryFocus = false;
 
   @override
   void initState() {
@@ -262,6 +264,7 @@ class _DashronymInlineState extends State<DashronymInline>
       hoverHideDelay:
           widget.theme.hoverHideDelay ?? widget.theme.hoverShowDelay,
     );
+    _interaction.triggerFocusNode.addListener(_handleTriggerFocusNodeChange);
     _fadeController = AnimationController(
       vsync: this,
       duration: widget.theme.tooltipFadeDuration,
@@ -286,6 +289,9 @@ class _DashronymInlineState extends State<DashronymInline>
     _tooltipController?.release(this);
     _tooltipController = null;
     _unregisterKeyboardHandler();
+    _interaction.triggerFocusNode.removeListener(
+      _handleTriggerFocusNodeChange,
+    );
     _interaction.dispose();
     _disposeAnimations();
     _fadeController.dispose();
@@ -514,6 +520,16 @@ class _DashronymInlineState extends State<DashronymInline>
     });
   }
 
+  // The trigger's semantics node reports focus itself (see build), so track
+  // primary focus the way Focus does.
+  void _handleTriggerFocusNodeChange() {
+    final hasPrimaryFocus = _interaction.triggerFocusNode.hasPrimaryFocus;
+    if (hasPrimaryFocus == _triggerHasPrimaryFocus) return;
+    setState(() {
+      _triggerHasPrimaryFocus = hasPrimaryFocus;
+    });
+  }
+
   void _toggle() {
     if (_tooltipVisible) {
       _hide();
@@ -655,9 +671,14 @@ class _DashronymInlineState extends State<DashronymInline>
       locale: widget.locale,
     );
 
+    // The Semantics below speaks for the whole trigger: it carries the label
+    // and the tap action, so the text and the gesture detector stay silent.
+    // Otherwise the duplicate tap action splits the trigger into two nodes and
+    // screen readers stop on the acronym twice.
     Widget result = GestureDetector(
       onTap: () => _interaction.handleTriggerTap(wasVisible: _tooltipVisible),
       behavior: HitTestBehavior.opaque,
+      excludeFromSemantics: true,
       child: MouseRegion(
         onEnter: widget.theme.enableHover
             ? (_) => _interaction.handleTriggerEnter()
@@ -666,7 +687,7 @@ class _DashronymInlineState extends State<DashronymInline>
             ? (_) => _interaction.handleTriggerExit()
             : null,
         cursor: SystemMouseCursors.click,
-        child: textWidget,
+        child: ExcludeSemantics(child: textWidget),
       ),
     );
 
@@ -691,6 +712,7 @@ class _DashronymInlineState extends State<DashronymInline>
 
     result = FocusableActionDetector(
       focusNode: _interaction.triggerFocusNode,
+      includeFocusSemantics: false,
       onFocusChange: _interaction.handleTriggerFocusChange,
       onShowFocusHighlight: (show) {
         if (show == _showFocusHighlight || !mounted) return;
@@ -729,21 +751,39 @@ class _DashronymInlineState extends State<DashronymInline>
         ? null
         : AttributedString(widget.acronym, attributes: labelAttributes);
 
+    // Since Flutter 3.41, a node that sets its own locale no longer absorbs
+    // children without that locale. Set it only when it differs from the
+    // ambient one, so the overlay's traversal anchor merges into this node and
+    // screen readers read the card right after the acronym.
+    final subtreeLocale = widget.locale == Localizations.maybeLocaleOf(context)
+        ? null
+        : widget.locale;
+
     return Semantics(
-      // Flutter 3.38 requires nodes that assign a locale to their subtree to
-      // establish a semantics container. Keep this conditional so triggers
-      // without authored locale metadata preserve their existing tree shape.
-      container: widget.locale != null,
+      // Like a button, the trigger is always its own node, so it never merges
+      // with neighboring text.
+      container: true,
       button: true,
       expanded: _tooltipVisible,
+      // FocusableActionDetector leaves focus out of the tree; this node
+      // reports it instead, as Focus would, so a trigger with its own locale
+      // still exposes one focusable node.
+      focusable: true,
+      focused: _triggerHasPrimaryFocus,
+      // Focus leaves this off on iOS (flutter/flutter#150030).
+      onFocus: defaultTargetPlatform == TargetPlatform.iOS
+          ? null
+          : _interaction.triggerFocusNode.requestFocus,
       label: attributedLabel == null ? widget.acronym : null,
       attributedLabel: attributedLabel,
       identifier: widget.semanticsIdentifier,
-      localeForSubtree: widget.locale,
+      localeForSubtree: subtreeLocale,
       hint: _tooltipVisible
           ? strings.semanticsHintHide(widget.acronym)
           : strings.semanticsHintShow(widget.acronym),
       onTap: _toggle,
+      onExpand: _tooltipVisible ? null : _show,
+      onCollapse: _tooltipVisible ? _hide : null,
       child: result,
     );
   }
