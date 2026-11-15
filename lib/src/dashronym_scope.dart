@@ -41,8 +41,9 @@ class DashronymScope extends StatefulWidget {
 
   /// Optional visual defaults for descendants.
   ///
-  /// When omitted, descendants can use a `DashronymTheme` installed in
-  /// `ThemeData.extensions`, followed by the package defaults.
+  /// When omitted, descendants use the nearest `DashronymThemeScope`, then a
+  /// `DashronymTheme` installed in `ThemeData.extensions`, followed by the
+  /// package defaults.
   final DashronymTheme? theme;
 
   /// Optional custom tooltip builder shared by descendants.

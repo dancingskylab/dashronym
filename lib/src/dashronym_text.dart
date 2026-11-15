@@ -6,6 +6,7 @@ import 'dashronym_inline.dart';
 import 'dashronym_scope.dart';
 import 'dashronym_registry.dart';
 import 'dashronym_theme.dart';
+import 'dashronym_theme_scope.dart';
 import 'dashronym_tooltip_controller.dart';
 
 part 'dashronym_span_transformer.dart';
@@ -118,8 +119,9 @@ class DashronymText extends StatelessWidget {
 
   /// Visual customization for the inline trigger and the tooltip card.
   ///
-  /// Resolution order is this value, [DashronymScope.theme], the
-  /// [DashronymTheme] in [ThemeData.extensions], then package defaults.
+  /// Resolution order is this value, [DashronymScope.theme], the nearest
+  /// [DashronymThemeScope], the [DashronymTheme] in [ThemeData.extensions],
+  /// then package defaults.
   final DashronymTheme? theme;
 
   /// Optional builder for a custom tooltip widget.
@@ -200,6 +202,7 @@ class DashronymText extends StatelessWidget {
     final effectiveTheme =
         theme ??
         scope?.theme ??
+        DashronymThemeScope.maybeOf(context) ??
         Theme.of(context).extension<DashronymTheme>() ??
         const DashronymTheme();
     final effectiveTooltipBuilder = tooltipBuilder ?? scope?.tooltipBuilder;

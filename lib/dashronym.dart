@@ -24,6 +24,7 @@ export 'src/dashronym_text.dart';
 export 'src/dashronym_scope.dart';
 export 'src/dashronym_text_extension.dart';
 export 'src/dashronym_theme.dart';
+export 'src/dashronym_theme_scope.dart';
 export 'src/dashronym_localizations.dart';
 export 'src/dashronym_inline.dart'
     show DashronymTooltipBuilder, DashronymTooltipDetails;
