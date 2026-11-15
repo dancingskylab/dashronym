@@ -2,14 +2,8 @@
 
 ## Supported versions
 
-| Version | Supported |
-| --- | --- |
-| 0.3.x | Yes |
-| 0.2.x | Security fixes, best effort, for apps that can't move to Flutter 3.50 yet |
-| Older | No |
-
-Fixes land in the latest release of each supported line on pub.dev. Upgrade
-before reporting an issue against an unsupported version.
+Security fixes land in the latest release on pub.dev. Upgrade before
+reporting an issue against an older `0.x` version.
 
 ## Reporting a vulnerability
 
