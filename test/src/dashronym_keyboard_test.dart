@@ -144,4 +144,45 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(DashronymTooltipCard), findsNothing);
   });
+
+  testWidgets('Enter toggles a focused trigger where Enter maps to '
+      'ButtonActivateIntent, as on the web', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        localizationsDelegates: [DashronymLocalizations.delegate],
+        // Replace the app-level shortcuts with the web mapping, where Enter
+        // produces ButtonActivateIntent and nothing maps it to ActivateIntent.
+        shortcuts: <ShortcutActivator, Intent>{
+          SingleActivator(LogicalKeyboardKey.tab): NextFocusIntent(),
+          SingleActivator(LogicalKeyboardKey.tab, shift: true):
+              PreviousFocusIntent(),
+          SingleActivator(LogicalKeyboardKey.enter): ButtonActivateIntent(),
+          SingleActivator(LogicalKeyboardKey.escape): DismissIntent(),
+        },
+        home: Scaffold(
+          body: Center(
+            child: DashronymInline(
+              acronym: 'SDK',
+              description: 'Software Development Kit',
+              theme: DashronymTheme(enableHover: false),
+              textStyle: TextStyle(),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Focusing the trigger opens its card; Enter then toggles it.
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pumpAndSettle();
+    expect(find.byType(DashronymTooltipCard), findsOneWidget);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    expect(find.byType(DashronymTooltipCard), findsNothing);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    expect(find.byType(DashronymTooltipCard), findsOneWidget);
+  });
 }

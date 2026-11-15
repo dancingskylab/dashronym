@@ -666,6 +666,14 @@ class _DashronymInlineState extends State<DashronymInline>
             return null;
           },
         ),
+        // The web maps Enter to ButtonActivateIntent rather than
+        // ActivateIntent, so handle both, as Flutter's own buttons do.
+        ButtonActivateIntent: CallbackAction<Intent>(
+          onInvoke: (_) {
+            _toggle();
+            return null;
+          },
+        ),
         // Only claim Escape while there is a tooltip to dismiss. Otherwise
         // the intent must reach enclosing routes, such as a dialog.
         if (_tooltipVisible)
