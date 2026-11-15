@@ -79,8 +79,10 @@ import 'dashronym_tooltip_overlay.dart';
 ///   },
 /// );
 /// ```
-typedef DashronymTooltipBuilder =
-    Widget Function(BuildContext context, DashronymTooltipDetails details);
+typedef DashronymTooltipBuilder = Widget Function(
+  BuildContext context,
+  DashronymTooltipDetails details,
+);
 
 /// Data surfaced to [DashronymTooltipBuilder] implementations.
 class DashronymTooltipDetails {
