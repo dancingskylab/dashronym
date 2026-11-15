@@ -38,5 +38,7 @@ migrate_working_dir/
 /doc/
 /packagetester/
 /package_tester/
+test/**/failures/
 
 agents.md
+/CLAUDE.md

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 import 'dashronym_config.dart';
 import 'dashronym_text.dart';

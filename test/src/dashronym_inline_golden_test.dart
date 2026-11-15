@@ -2,7 +2,6 @@ import 'dart:ui';
 
 import 'package:dashronym/dashronym.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dashronym/src/dashronym_inline.dart';
 import 'package:dashronym/src/dashronym_tooltip_constraints.dart';
@@ -24,12 +23,7 @@ Future<void> _pumpInline(
   await tester.pumpWidget(
     MaterialApp(
       debugShowCheckedModeBanner: false,
-      localizationsDelegates: const [
-        DashronymLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
+      localizationsDelegates: const [DashronymLocalizations.delegate],
       home: Directionality(
         textDirection: textDirection,
         child: Scaffold(

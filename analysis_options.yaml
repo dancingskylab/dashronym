@@ -4,6 +4,10 @@ include: package:flutter_lints/flutter.yaml
 # https://dart.dev/guides/language/analysis-options
 
 analyzer:
+  exclude:
+    - build/**
+    # Local, gitignored manual-testing app.
+    - package_tester/**
   language:
     strict-casts: true
     strict-inference: true

@@ -1,7 +1,32 @@
 # Migration guide
 
 Dashronym is pre-1.0, so minor releases can contain breaking changes. This
-guide covers the changes needed to move from `0.1.x` to `0.2.0`.
+guide covers the changes needed to move from `0.1.x` to `0.2.x`.
+
+## 0.2.0 to 0.2.1
+
+0.2.1 has no breaking changes. To prepare for 0.3.0, move an app-wide
+`DashronymTheme` out of `ThemeData.extensions` and into `DashronymThemeScope`:
+
+```dart
+// Before
+MaterialApp(
+  theme: ThemeData(extensions: const [DashronymTheme(cardElevation: 2)]),
+  home: const Article(),
+);
+
+// After
+MaterialApp(
+  builder: (context, child) => DashronymThemeScope(
+    data: const DashronymTheme(cardElevation: 2),
+    child: child!,
+  ),
+  home: const Article(),
+);
+```
+
+`DashronymScope(theme: ...)` and themes passed directly to widgets keep
+working unchanged.
 
 ## 0.1.x to 0.2.0
 

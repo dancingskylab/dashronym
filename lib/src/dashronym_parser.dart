@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 import 'dashronym_inline.dart';
 import 'dashronym_parser_core.dart';

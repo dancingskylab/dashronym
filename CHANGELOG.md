@@ -1,10 +1,34 @@
-## Unreleased
+## 0.2.1 - 2026-11-14
+
+### Added
+
+- Added `DashronymThemeScope`, an inherited theme that provides a
+  `DashronymTheme` to a subtree without `ThemeData.extensions`, so it also
+  reaches Dashronym widgets in apps on Flutter's standalone `material_ui`
+  package. Install it once, for example in `MaterialApp.builder`, to prepare
+  for 0.3.0, which stops reading `ThemeData.extensions`.
 
 ### Fixed
 
 - Fixed a keyboard trap: tabbing into an open tooltip's close button no
   longer freezes focus there. `Tab`/`Shift+Tab` now escape the tooltip and
   continue to the next trigger, wrapping back to the first one at the end.
+- Escape on an open tooltip no longer also closes an enclosing dialog or
+  route. Like Flutter's own tooltips, the tooltip consumes that key press.
+- Escape now reaches an enclosing dialog or route when a focused acronym's
+  tooltip is already closed, or when a newer route covers the acronym.
+- Enter now opens and closes a focused acronym on the web.
+- Activating a focusable control inside a custom tooltip no longer closes
+  the tooltip.
+
+### Changed
+
+- Reduced the package's use of `package:flutter/material.dart`, which
+  Flutter 3.50 deprecates.
+- Updated CI to test Flutter 3.38.1, 3.44.9 and 3.47.9, and to report on
+  Flutter 3.50 without blocking.
+- Documented a Flutter issue that misplaces overlay content for VoiceOver on
+  iOS with Flutter 3.41.0 to 3.44.9 and 3.47.0 to 3.47.6.
 
 ## 0.2.0 - 2026-07-24
 
