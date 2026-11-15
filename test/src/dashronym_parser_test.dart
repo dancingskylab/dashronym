@@ -3,7 +3,7 @@ import 'package:dashronym/src/dashronym_inline.dart';
 import 'package:dashronym/src/dashronym_parser.dart';
 import 'package:dashronym/src/dashronym_parser_core.dart';
 import 'package:dashronym/src/dashronym_token.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 DashronymParser _parser() => DashronymParser(

@@ -1,18 +1,21 @@
 import 'dart:ui' show PointerDeviceKind, Tristate;
 
 import 'package:dashronym/dashronym.dart';
+import 'package:dashronym/src/dashronym_close_button.dart';
 import 'package:dashronym/src/dashronym_inline.dart';
 import 'package:dashronym/src/dashronym_tooltip_card.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+
+import 'support/dashronym_test_host.dart';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Widget _testHarness(Widget child) {
-  return MaterialApp(
+  return TestWidgetsApp(
     localizationsDelegates: const [DashronymLocalizations.delegate],
-    supportedLocales: DashronymLocalizations.supportedLocales,
-    home: Scaffold(body: Center(child: child)),
+    home: TestPage(body: Center(child: child)),
   );
 }
 
@@ -94,12 +97,11 @@ void main() {
   testWidgets('Tooltip repositions to remain within the viewport', (
     tester,
   ) async {
-    final view = tester.view;
-    final originalLogicalSize = view.physicalSize / view.devicePixelRatio;
-
+    // Passing null clears the override; a stored size would leak into later
+    // tests that resize the window.
     await tester.binding.setSurfaceSize(const Size(220, 320));
     addTearDown(() async {
-      await tester.binding.setSurfaceSize(originalLogicalSize);
+      await tester.binding.setSurfaceSize(null);
     });
 
     await tester.pumpWidget(
@@ -119,7 +121,7 @@ void main() {
     final cardFinder = find.byType(DashronymTooltipCard);
     expect(cardFinder, findsOneWidget);
 
-    final screenSize = view.physicalSize / view.devicePixelRatio;
+    const screenSize = Size(220, 320);
     final topLeft = tester.getTopLeft(cardFinder);
     final topRight = tester.getTopRight(cardFinder);
     final bottomLeft = tester.getBottomLeft(cardFinder);
@@ -304,7 +306,9 @@ void main() {
 
     final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
     await gesture.addPointer();
-    await gesture.moveTo(tester.getCenter(find.byType(IconButton)));
+    await gesture.moveTo(
+      tester.getCenter(find.byTooltip('Hide definition for SDK')),
+    );
     await tester.pump(const Duration(seconds: 1));
 
     expect(find.byTooltip('Hide definition for SDK'), findsOneWidget);
@@ -510,22 +514,6 @@ void main() {
   testWidgets('announcements use one platform-appropriate semantics path', (
     tester,
   ) async {
-    final messages = <Object?>[];
-    tester.binding.defaultBinaryMessenger.setMockDecodedMessageHandler<Object?>(
-      SystemChannels.accessibility,
-      (message) async {
-        messages.add(message);
-        return null;
-      },
-    );
-    addTearDown(
-      () => tester.binding.defaultBinaryMessenger
-          .setMockDecodedMessageHandler<Object?>(
-            SystemChannels.accessibility,
-            null,
-          ),
-    );
-
     await tester.pumpWidget(
       _testHarness(
         const MediaQuery(
@@ -543,21 +531,17 @@ void main() {
     await tester.tap(find.text('API'));
     await tester.pumpAndSettle();
 
-    final announcements = messages
-        .whereType<Map<Object?, Object?>>()
-        .where((message) => message['type'] == 'announce')
-        .toList();
-    expect(announcements, hasLength(1));
-    expect(
-      (announcements.single['data'] as Map<Object?, Object?>)['message'],
-      'Showing definition for API. Application Programming Interface',
-    );
+    expect(tester.takeAnnouncements(), [
+      isAccessibilityAnnouncement(
+        'Showing definition for API. Application Programming Interface',
+        textDirection: TextDirection.ltr,
+      ),
+    ]);
     final tooltipSemantics = tester.getSemantics(
       find.byType(DashronymTooltipCard),
     );
     expect(tooltipSemantics.flagsCollection.isLiveRegion, isFalse);
 
-    messages.clear();
     await tester.pumpWidget(
       _testHarness(
         const MediaQuery(
@@ -575,12 +559,7 @@ void main() {
     await tester.tap(find.text('SDK').first);
     await tester.pumpAndSettle();
 
-    expect(
-      messages.whereType<Map<Object?, Object?>>().where(
-        (message) => message['type'] == 'announce',
-      ),
-      isEmpty,
-    );
+    expect(tester.takeAnnouncements(), isEmpty);
     final fallbackTooltipSemantics = tester.getSemantics(
       find.byType(DashronymTooltipCard),
     );
@@ -598,7 +577,7 @@ void main() {
   testWidgets('tooltip updates content and inherits the trigger theme', (
     tester,
   ) async {
-    final color = ValueNotifier(Colors.indigo);
+    final color = ValueNotifier(Color(0xFF3F51B5));
     final description = ValueNotifier('First definition');
     addTearDown(color.dispose);
     addTearDown(description.dispose);
@@ -611,13 +590,10 @@ void main() {
             return ValueListenableBuilder<String>(
               valueListenable: description,
               builder: (context, currentDescription, _) {
-                return Theme(
-                  data: Theme.of(context).copyWith(
-                    colorScheme: ColorScheme.fromSeed(
-                      seedColor: currentColor,
-                      primary: currentColor,
-                    ),
-                  ),
+                // Any inherited theme around the trigger, here IconTheme,
+                // must reach the tooltip content built in the overlay.
+                return IconTheme(
+                  data: IconThemeData(color: currentColor),
                   child: DashronymInline(
                     acronym: 'API',
                     description: currentDescription,
@@ -628,7 +604,7 @@ void main() {
                     tooltipBuilder: (context, details) {
                       return ColoredBox(
                         key: const ValueKey('custom-tooltip'),
-                        color: Theme.of(context).colorScheme.primary,
+                        color: IconTheme.of(context).color!,
                         child: Text(details.description),
                       );
                     },
@@ -644,42 +620,48 @@ void main() {
     await tester.tap(find.text('API'));
     await tester.pumpAndSettle();
     expect(find.text('First definition'), findsOneWidget);
-    expect(tester.widget<Text>(find.text('API')).style?.color, Colors.indigo);
+    expect(
+      tester.widget<Text>(find.text('API')).style?.color,
+      Color(0xFF3F51B5),
+    );
     expect(
       tester
           .widget<ColoredBox>(
             find.byKey(const ValueKey('custom-tooltip')),
           )
           .color,
-      Colors.indigo,
+      Color(0xFF3F51B5),
     );
 
     description.value = 'Updated definition';
-    color.value = Colors.teal;
+    color.value = Color(0xFF009688);
     await tester.pumpAndSettle();
 
     expect(find.text('First definition'), findsNothing);
     expect(find.text('Updated definition'), findsOneWidget);
-    expect(tester.widget<Text>(find.text('API')).style?.color, Colors.teal);
+    expect(
+      tester.widget<Text>(find.text('API')).style?.color,
+      Color(0xFF009688),
+    );
     expect(
       tester
           .widget<ColoredBox>(
             find.byKey(const ValueKey('custom-tooltip')),
           )
           .color,
-      Colors.teal,
+      Color(0xFF009688),
     );
   });
 
   testWidgets('long large-scale tooltip avoids safe areas and keyboard', (
     tester,
   ) async {
-    final originalLogicalSize =
-        tester.view.physicalSize / tester.view.devicePixelRatio;
-    await tester.binding.setSurfaceSize(const Size(280, 320));
-    addTearDown(
-      () => tester.binding.setSurfaceSize(originalLogicalSize),
-    );
+    // Safe areas and the keyboard come from the window, as in a real app.
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(280, 320);
+    tester.view.padding = const FakeViewPadding(top: 20, bottom: 20);
+    tester.view.viewInsets = const FakeViewPadding(bottom: 100);
+    addTearDown(tester.view.reset);
     final description = List.filled(
       20,
       'A long accessibility-aware definition.',
@@ -687,18 +669,18 @@ void main() {
 
     await tester.pumpWidget(
       _testHarness(
-        MediaQuery(
-          data: const MediaQueryData(
-            size: Size(280, 320),
-            padding: EdgeInsets.symmetric(vertical: 20),
-            viewInsets: EdgeInsets.only(bottom: 100),
-            textScaler: TextScaler.linear(3),
-          ),
-          child: DashronymInline(
-            acronym: 'A11Y',
-            description: description,
-            theme: _theme(),
-            textStyle: const TextStyle(),
+        Builder(
+          // The overlay inherits the trigger's text scale.
+          builder: (context) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(3)),
+            child: DashronymInline(
+              acronym: 'A11Y',
+              description: description,
+              theme: _theme(),
+              textStyle: const TextStyle(),
+            ),
           ),
         ),
       ),
@@ -752,6 +734,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Software Development Kit'), findsOneWidget);
 
+    // Past SDK's close button to the API trigger.
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.pumpAndSettle();
     expect(find.text('Software Development Kit'), findsNothing);
@@ -759,8 +743,7 @@ void main() {
   });
 
   testWidgets(
-    'tab traversal escapes an open tooltip and wraps back to the first '
-    'trigger',
+    'tab visits each trigger and then its open card, wherever the card sits',
     (tester) async {
       await tester.pumpWidget(
         _testHarness(
@@ -802,27 +785,33 @@ void main() {
         await tester.pumpAndSettle();
       }
 
-      await tab();
-      expect(find.text('Software Development Kit'), findsOneWidget);
-      await tab();
-      expect(find.text('Application Programming Interface'), findsOneWidget);
-      await tab();
-      expect(find.text('Command Line Interface'), findsOneWidget);
+      for (final description in [
+        'Software Development Kit',
+        'Application Programming Interface',
+        'Command Line Interface',
+      ]) {
+        // The trigger opens its card...
+        await tab();
+        expect(find.text(description), findsOneWidget);
+        // ...and the next stop is the card's close button. The following
+        // Tab escapes the card's focus scope instead of looping on it.
+        await tab();
+        expect(find.text(description), findsOneWidget);
+        final focused = FocusManager.instance.primaryFocus!.context!;
+        expect(
+          focused.findAncestorWidgetOfExactType<DashronymCloseButton>(),
+          isNotNull,
+        );
+      }
 
-      // The next stop is the open tooltip's own close button, not another
-      // trigger.
-      await tab();
-      expect(find.text('Command Line Interface'), findsOneWidget);
-      final closeButtonFocus = FocusManager.instance.primaryFocus;
-      expect(closeButtonFocus, isNotNull);
-
-      // Tabbing past the tooltip's only control must escape the tooltip's
-      // focus scope and land back on the first trigger, not loop on the
-      // close button forever.
+      // Past the last card, the web hands focus back to the browser; other
+      // platforms wrap to the first trigger.
       await tab();
       expect(find.text('Command Line Interface'), findsNothing);
-      expect(find.text('Software Development Kit'), findsOneWidget);
-      expect(FocusManager.instance.primaryFocus, isNot(closeButtonFocus));
+      expect(
+        find.text('Software Development Kit'),
+        kIsWeb ? findsNothing : findsOneWidget,
+      );
     },
   );
 
@@ -889,7 +878,8 @@ void main() {
             return GestureDetector(
               key: tooltipKey,
               onTap: details.hideTooltip,
-              child: Material(
+              child: PhysicalModel(
+                color: const Color(0xFFFFFFFF),
                 elevation: 2,
                 child: Padding(
                   padding: const EdgeInsets.all(8),
@@ -913,7 +903,7 @@ void main() {
     expect(find.byKey(tooltipKey), findsNothing);
   });
 
-  testWidgets('DashronymInline reacts to updates, metrics changes, and scrolls', (
+  testWidgets('reacts to updates, metrics changes, and scrolls', (
     tester,
   ) async {
     final themeNotifier = ValueNotifier(
@@ -1010,7 +1000,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(DashronymTooltipCard), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.close));
+    await tester.tap(find.byTooltip('Hide definition for SDK'));
     await tester.pumpAndSettle();
     expect(find.byType(DashronymTooltipCard), findsNothing);
   });
@@ -1018,14 +1008,11 @@ void main() {
   testWidgets('DashronymInline hides tooltip on orientation change', (
     tester,
   ) async {
-    final binding = tester.binding;
-    final view = tester.view;
-    final originalLogicalSize = view.physicalSize / view.devicePixelRatio;
-
-    await binding.setSurfaceSize(const Size(360, 640));
-    addTearDown(() async {
-      await binding.setSurfaceSize(originalLogicalSize);
-    });
+    // Rotate the window itself: a surface-size override leaves the view's
+    // metrics alone, so it doesn't count as this view changing.
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(360, 640);
+    addTearDown(tester.view.reset);
 
     await tester.pumpWidget(
       _testHarness(
@@ -1042,8 +1029,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(DashronymTooltipCard), findsOneWidget);
 
-    await binding.setSurfaceSize(const Size(640, 360));
-    binding.handleMetricsChanged();
+    tester.view.physicalSize = const Size(640, 360);
     await tester.pump();
     await tester.pumpAndSettle();
 

@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'dashronym_inline.dart';
 import 'dashronym_config.dart';
 import 'dashronym_theme.dart';
+import 'dashronym_theme_scope.dart';
 import 'dashronym_registry.dart';
 import 'dashronym_tooltip_controller.dart';
 
@@ -41,9 +42,10 @@ class DashronymScope extends StatefulWidget {
 
   /// Optional visual defaults for descendants.
   ///
-  /// When omitted, descendants use the nearest `DashronymThemeScope`, then a
-  /// `DashronymTheme` installed in `ThemeData.extensions`, followed by the
-  /// package defaults.
+  /// The scope provides this theme to its subtree as a [DashronymThemeScope],
+  /// so a [DashronymThemeScope] placed inside the scope still takes
+  /// precedence. When omitted, descendants keep the theme inherited from
+  /// above, or the package defaults.
   final DashronymTheme? theme;
 
   /// Optional custom tooltip builder shared by descendants.
@@ -93,9 +95,18 @@ class DashronymScope extends StatefulWidget {
 class _DashronymScopeState extends State<DashronymScope> {
   @override
   Widget build(BuildContext context) {
+    // Always install a theme scope, passing an inherited theme through when
+    // this scope sets none. The nearest theme then wins, and toggling the
+    // theme does not change the shape of the subtree.
     return _DashronymScopeProvider(
       scope: widget,
-      child: DashronymTooltipScope(child: widget.child),
+      child: DashronymThemeScope(
+        data:
+            widget.theme ??
+            DashronymThemeScope.maybeOf(context) ??
+            const DashronymTheme(),
+        child: DashronymTooltipScope(child: widget.child),
+      ),
     );
   }
 }

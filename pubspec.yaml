@@ -1,6 +1,6 @@
 name: dashronym
 description: Accessible inline acronym definitions for Flutter.
-version: 0.2.1
+version: 0.3.0
 homepage: https://github.com/dancingskylab/dashronym
 repository: https://github.com/dancingskylab/dashronym
 issue_tracker: https://github.com/dancingskylab/dashronym/issues
@@ -12,7 +12,7 @@ topics:
   - text
 
 screenshots:
-  - description: 'Animated overview of Dashronym tooltips responding to user taps.'
+  - description: 'Tapping acronyms, a custom tooltip, keyboard navigation and dark mode in the example app.'
     path: screenshots/0_dashronym.gif
   - description: 'Landscape tooltip showcasing custom builder content.'
     path: screenshots/1_dashronym_landscape_tooltip_builder.png
@@ -20,10 +20,12 @@ screenshots:
     path: screenshots/2_dashronym_landscape_tooltip.png
   - description: 'Portrait tooltip with viewport-safe positioning.'
     path: screenshots/3_dashronym_portrait_tooltip.png
+  - description: 'The definition card following a dark theme.'
+    path: screenshots/4_dashronym_dark_tooltip.png
 
 environment:
-  sdk: '>=3.10.0 <4.0.0'
-  flutter: '>=3.38.1'
+  sdk: ^3.14.0
+  flutter: '>=3.50.0'
 
 dependencies:
   flutter:
@@ -33,6 +35,3 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-
-flutter:
-  uses-material-design: true

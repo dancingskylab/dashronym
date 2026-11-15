@@ -5,28 +5,23 @@ import 'package:flutter/widgets.dart';
 
 /// Signature used by the tooltip interaction coordinator to hide a surface.
 @internal
-typedef DashronymTooltipHideCallback =
-    void Function({
-      bool immediate,
-      bool announce,
-      bool restoreFocus,
-    });
+typedef DashronymTooltipHideCallback = void Function({
+  bool immediate,
+  bool announce,
+  bool restoreFocus,
+});
 
 /// Owns the focus and hover interaction lifecycle for one inline trigger.
 @internal
 class DashronymTooltipInteraction {
   /// Creates an interaction coordinator.
   DashronymTooltipInteraction({
-    required VoidCallback showTooltip,
-    required DashronymTooltipHideCallback hideTooltip,
-    required bool Function() isAlive,
-    required Duration hoverShowDelay,
-    required Duration hoverHideDelay,
-  }) : _showTooltip = showTooltip,
-       _hideTooltip = hideTooltip,
-       _isAlive = isAlive,
-       _hoverShowDelay = hoverShowDelay,
-       _hoverHideDelay = hoverHideDelay;
+    required this._showTooltip,
+    required this._hideTooltip,
+    required this._isAlive,
+    required this._hoverShowDelay,
+    required this._hoverHideDelay,
+  });
 
   final VoidCallback _showTooltip;
   final DashronymTooltipHideCallback _hideTooltip;

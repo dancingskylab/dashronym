@@ -1,0 +1,23 @@
+name: dashronym_example
+description: Demonstrates Dashronym in Material, Cupertino and widgets-only apps.
+publish_to: none
+
+environment:
+  sdk: ^3.14.0
+  flutter: '>=3.50.0'
+
+dependencies:
+  cupertino_ui: ^1.1.6
+  dashronym:
+    path: ../
+  flutter:
+    sdk: flutter
+  material_ui: ^1.11.0
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true

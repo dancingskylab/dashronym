@@ -1,12 +1,16 @@
 import 'dart:ui' show lerpDouble;
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 /// Visual customization for inline acronym triggers and their tooltip cards.
 ///
-/// Supply an instance to dashronym APIs (e.g., the inline acronym widget or
-/// text extension) to control underline behavior, hover timing, tooltip
-/// animation, card geometry, and iconography.
+/// Supply an instance to a Dashronym widget, a `DashronymScope`, or a
+/// `DashronymThemeScope` to control underline behavior, hover timing, tooltip
+/// animation, card geometry, colors, and iconography.
+///
+/// Every color and icon is optional. Unset values are derived from the host
+/// app through the widgets layer, so the same theme works in Material,
+/// Cupertino, and custom design-system apps.
 ///
 /// Example:
 /// ```dart
@@ -16,157 +20,164 @@ import 'package:flutter/material.dart';
 ///   tooltipFadeDuration: Duration(milliseconds: 200),
 ///   cardWidth: 300,
 ///   cardBorderRadius: 10,
-///   cardIcon: Icons.info_outline,
+///   cardColor: Color(0xFFFFFBFE),
 ///   tooltipOffset: Offset(0, 8),
 /// );
 /// ```
-class DashronymTheme extends ThemeExtension<DashronymTheme> {
+@immutable
+class const DashronymTheme({
+  /// Whether matched acronyms are underlined in the inline trigger.
+  final bool underline = true,
+
+  /// The [TextDecorationStyle] used when [underline] is `true`.
+  final TextDecorationStyle decorationStyle = TextDecorationStyle.dotted,
+
+  /// The underline thickness; when `null`, the base text style decides.
+  final double? decorationThickness,
+
+  /// Style override for the inline acronym text (e.g., weight or color).
+  final TextStyle? acronymStyle,
+
+  /// Background highlight painted behind a keyboard-focused acronym.
+  ///
+  /// When `null`, the trigger's text color at 12% opacity is used, or 24%
+  /// when the platform requests high contrast.
+  final Color? acronymFocusColor,
+
+  /// Maximum width of the tooltip card in logical pixels.
+  final double cardWidth = 320,
+
+  /// Shadow elevation of the tooltip card surface.
+  final double cardElevation = 8,
+
+  /// Background color of the tooltip card.
+  ///
+  /// When `null`, a light or dark neutral surface is chosen to contrast with
+  /// the ambient text color, falling back to the platform brightness.
+  final Color? cardColor,
+
+  /// Color of the card's elevation shadow; black when `null`.
+  final Color? cardShadowColor,
+
+  /// Outline drawn around the tooltip card.
+  ///
+  /// When `null`, the card has no outline unless the platform requests high
+  /// contrast, in which case a 1 px outline in the card's text color is drawn.
+  final BorderSide? cardBorderSide,
+
+  /// Inner padding for the tooltip card's content area.
+  final EdgeInsets cardPadding = const EdgeInsets.all(8),
+
+  /// Delay before showing the tooltip when the pointer hovers the trigger.
+  final Duration hoverShowDelay = const Duration(milliseconds: 250),
+
+  /// Delay before hiding after the pointer leaves the trigger.
+  ///
+  /// If `null`, defaults to [hoverShowDelay].
+  final Duration? hoverHideDelay,
+
+  /// Duration of the tooltip's fade in/out animation.
+  final Duration tooltipFadeDuration = const Duration(milliseconds: 150),
+
+  /// Enables hover-triggered behavior on desktop/web when `true`.
+  final bool enableHover = true,
+
+  /// Corner radius for the tooltip card's rounded rectangle.
+  final double cardBorderRadius = 12,
+
+  /// Leading icon displayed inside the tooltip card.
+  ///
+  /// When `null`, a built-in information glyph is painted, which needs no
+  /// icon font. Supply an icon from your design system to replace it, such as
+  /// `Icons.info_outline` or `CupertinoIcons.info`.
+  final IconData? cardIcon,
+
+  /// Icon used by the tooltip card's close button.
+  ///
+  /// When `null`, a built-in close glyph is painted, which needs no icon font.
+  final IconData? cardCloseIcon,
+
+  /// Color applied to icons inside the tooltip card.
+  ///
+  /// When `null`, the ambient [IconTheme] color is used if it contrasts with
+  /// the card surface, otherwise the card's text color.
+  final Color? cardIconColor,
+
+  /// Text style for the acronym title in the card.
+  ///
+  /// Merged over a bold version of the ambient [DefaultTextStyle].
+  final TextStyle? cardTitleStyle,
+
+  /// Text style for the description subtitle in the card.
+  ///
+  /// Merged over the ambient [DefaultTextStyle].
+  final TextStyle? cardSubtitleStyle,
+
+  /// Extra padding applied around the card's content row.
+  final EdgeInsets cardContentPadding = const EdgeInsets.symmetric(
+    horizontal: 8,
+    vertical: 4,
+  ),
+
+  /// Minimum width reserved for the card's leading widget.
+  final double cardMinLeadingWidth = 24,
+
+  /// Offset of the tooltip relative to the inline trigger's origin.
+  final Offset tooltipOffset = const Offset(0, 6),
+
+  /// Curve used when fading the tooltip into view.
+  final Curve tooltipFadeInCurve = Curves.easeOut,
+
+  /// Curve used when fading the tooltip out of view.
+  final Curve tooltipFadeOutCurve = Curves.easeIn,
+
+  /// Curve used when scaling the tooltip into view.
+  final Curve tooltipScaleInCurve = Curves.easeOut,
+
+  /// Curve used when scaling the tooltip out of view.
+  final Curve tooltipScaleOutCurve = Curves.easeIn,
+
+  /// Starting scale factor applied to the tooltip during the show animation.
+  final double tooltipScaleBegin = 0.95,
+
+  /// Ending scale factor applied to the tooltip during the show animation.
+  final double tooltipScaleEnd = 1.0,
+
+  /// Minimum width constraint applied to the tooltip card.
+  final double? tooltipMinWidth,
+
+  /// Maximum width constraint applied to the tooltip card.
+  ///
+  /// Falls back to [cardWidth] when `null`.
+  final double? tooltipMaxWidth,
+}) {
   static const Object _sentinel = Object();
 
   /// Creates a theme describing trigger styling and tooltip card presentation.
   ///
   /// Asserts that [cardWidth] is positive and [cardElevation] is non-negative.
-  const DashronymTheme({
-    this.underline = true,
-    this.decorationStyle = TextDecorationStyle.dotted,
-    this.decorationThickness,
-    this.acronymStyle,
-    this.cardWidth = 320,
-    this.cardElevation = 8,
-    this.cardPadding = const EdgeInsets.all(8),
-    this.hoverShowDelay = const Duration(milliseconds: 250),
-    this.hoverHideDelay,
-    this.tooltipFadeDuration = const Duration(milliseconds: 150),
-    this.enableHover = true,
-    this.cardBorderRadius = 12,
-    this.cardIcon = Icons.info_outline,
-    this.cardCloseIcon = Icons.close,
-    this.cardIconColor,
-    this.cardTitleStyle,
-    this.cardSubtitleStyle,
-    this.cardContentPadding = const EdgeInsets.symmetric(
-      horizontal: 8,
-      vertical: 4,
-    ),
-    this.cardMinLeadingWidth = 24,
-    this.tooltipOffset = const Offset(0, 6),
-    this.tooltipFadeInCurve = Curves.easeOut,
-    this.tooltipFadeOutCurve = Curves.easeIn,
-    this.tooltipScaleInCurve = Curves.easeOut,
-    this.tooltipScaleOutCurve = Curves.easeIn,
-    this.tooltipScaleBegin = 0.95,
-    this.tooltipScaleEnd = 1.0,
-    this.tooltipMinWidth,
-    this.tooltipMaxWidth,
-  }) : assert(cardWidth > 0, 'cardWidth must be positive.'),
-       assert(cardElevation >= 0, 'cardElevation cannot be negative.'),
-       assert(tooltipScaleBegin > 0, 'tooltipScaleBegin must be positive.'),
-       assert(
-         tooltipScaleEnd >= tooltipScaleBegin,
-         'tooltipScaleEnd must be >= tooltipScaleBegin.',
-       ),
-       assert(
-         tooltipMinWidth == null || tooltipMinWidth >= 0,
-         'tooltipMinWidth cannot be negative.',
-       ),
-       assert(
-         tooltipMaxWidth == null || tooltipMaxWidth > 0,
-         'tooltipMaxWidth must be positive when provided.',
-       ),
-       assert(
-         tooltipMinWidth == null ||
-             tooltipMaxWidth == null ||
-             tooltipMinWidth <= tooltipMaxWidth,
-         'tooltipMinWidth must be <= tooltipMaxWidth.',
-       );
-
-  /// Whether matched acronyms are underlined in the inline trigger.
-  final bool underline;
-
-  /// The [TextDecorationStyle] used when [underline] is `true`.
-  final TextDecorationStyle decorationStyle;
-
-  /// The underline thickness; when `null`, the base text style decides.
-  final double? decorationThickness;
-
-  /// Style override for the inline acronym text (e.g., weight or color).
-  final TextStyle? acronymStyle;
-
-  /// Maximum width of the tooltip card in logical pixels.
-  final double cardWidth;
-
-  /// Material elevation of the tooltip card.
-  final double cardElevation;
-
-  /// Inner padding for the tooltip card's content area.
-  final EdgeInsets cardPadding;
-
-  /// Delay before showing the tooltip when the pointer hovers the trigger.
-  final Duration hoverShowDelay;
-
-  /// Delay before hiding after the pointer leaves the trigger.
-  ///
-  /// If `null`, defaults to [hoverShowDelay].
-  final Duration? hoverHideDelay;
-
-  /// Duration of the tooltip's fade in/out animation.
-  final Duration tooltipFadeDuration;
-
-  /// Enables hover-triggered behavior on desktop/web when `true`.
-  final bool enableHover;
-
-  /// Corner radius for the tooltip card's rounded rectangle.
-  final double cardBorderRadius;
-
-  /// Leading icon displayed inside the tooltip card.
-  final IconData cardIcon;
-
-  /// Trailing close icon used by the tooltip's dismiss button.
-  final IconData cardCloseIcon;
-
-  /// Color applied to icons inside the tooltip card; falls back to theme.
-  final Color? cardIconColor;
-
-  /// Text style for the acronym title in the card.
-  final TextStyle? cardTitleStyle;
-
-  /// Text style for the description subtitle in the card.
-  final TextStyle? cardSubtitleStyle;
-
-  /// Extra padding applied to the [ListTile] content within the card.
-  final EdgeInsets cardContentPadding;
-
-  /// Minimum width reserved for the card's leading widget.
-  final double cardMinLeadingWidth;
-
-  /// Offset of the tooltip relative to the inline trigger's origin.
-  final Offset tooltipOffset;
-
-  /// Curve used when fading the tooltip into view.
-  final Curve tooltipFadeInCurve;
-
-  /// Curve used when fading the tooltip out of view.
-  final Curve tooltipFadeOutCurve;
-
-  /// Curve used when scaling the tooltip into view.
-  final Curve tooltipScaleInCurve;
-
-  /// Curve used when scaling the tooltip out of view.
-  final Curve tooltipScaleOutCurve;
-
-  /// Starting scale factor applied to the tooltip during the show animation.
-  final double tooltipScaleBegin;
-
-  /// Ending scale factor applied to the tooltip during the show animation.
-  final double tooltipScaleEnd;
-
-  /// Minimum width constraint applied to the tooltip card.
-  final double? tooltipMinWidth;
-
-  /// Maximum width constraint applied to the tooltip card.
-  ///
-  /// Falls back to [cardWidth] when `null`.
-  final double? tooltipMaxWidth;
+  this
+    : assert(cardWidth > 0, 'cardWidth must be positive.'),
+      assert(cardElevation >= 0, 'cardElevation cannot be negative.'),
+      assert(tooltipScaleBegin > 0, 'tooltipScaleBegin must be positive.'),
+      assert(
+        tooltipScaleEnd >= tooltipScaleBegin,
+        'tooltipScaleEnd must be >= tooltipScaleBegin.',
+      ),
+      assert(
+        tooltipMinWidth == null || tooltipMinWidth >= 0,
+        'tooltipMinWidth cannot be negative.',
+      ),
+      assert(
+        tooltipMaxWidth == null || tooltipMaxWidth > 0,
+        'tooltipMaxWidth must be positive when provided.',
+      ),
+      assert(
+        tooltipMinWidth == null ||
+            tooltipMaxWidth == null ||
+            tooltipMinWidth <= tooltipMaxWidth,
+        'tooltipMinWidth must be <= tooltipMaxWidth.',
+      );
 
   /// Creates a copy with the provided fields replaced.
   ///
@@ -175,7 +186,6 @@ class DashronymTheme extends ThemeExtension<DashronymTheme> {
   ///
   /// For compatibility with earlier releases, passing `null` explicitly to
   /// [hoverHideDelay] clears that value; omitting it retains the current value.
-  @override
   DashronymTheme copyWith({
     bool? underline,
     TextDecorationStyle? decorationStyle,
@@ -183,8 +193,16 @@ class DashronymTheme extends ThemeExtension<DashronymTheme> {
     bool clearDecorationThickness = false,
     TextStyle? acronymStyle,
     bool clearAcronymStyle = false,
+    Color? acronymFocusColor,
+    bool clearAcronymFocusColor = false,
     double? cardWidth,
     double? cardElevation,
+    Color? cardColor,
+    bool clearCardColor = false,
+    Color? cardShadowColor,
+    bool clearCardShadowColor = false,
+    BorderSide? cardBorderSide,
+    bool clearCardBorderSide = false,
     EdgeInsets? cardPadding,
     Duration? hoverShowDelay,
     Object? hoverHideDelay = _sentinel,
@@ -192,7 +210,9 @@ class DashronymTheme extends ThemeExtension<DashronymTheme> {
     bool? enableHover,
     double? cardBorderRadius,
     IconData? cardIcon,
+    bool clearCardIcon = false,
     IconData? cardCloseIcon,
+    bool clearCardCloseIcon = false,
     Color? cardIconColor,
     bool clearCardIconColor = false,
     TextStyle? cardTitleStyle,
@@ -224,6 +244,42 @@ class DashronymTheme extends ThemeExtension<DashronymTheme> {
       clearAcronymStyle,
       'acronymStyle',
       'clearAcronymStyle',
+    );
+    _rejectReplacementAndClear(
+      acronymFocusColor,
+      clearAcronymFocusColor,
+      'acronymFocusColor',
+      'clearAcronymFocusColor',
+    );
+    _rejectReplacementAndClear(
+      cardColor,
+      clearCardColor,
+      'cardColor',
+      'clearCardColor',
+    );
+    _rejectReplacementAndClear(
+      cardShadowColor,
+      clearCardShadowColor,
+      'cardShadowColor',
+      'clearCardShadowColor',
+    );
+    _rejectReplacementAndClear(
+      cardBorderSide,
+      clearCardBorderSide,
+      'cardBorderSide',
+      'clearCardBorderSide',
+    );
+    _rejectReplacementAndClear(
+      cardIcon,
+      clearCardIcon,
+      'cardIcon',
+      'clearCardIcon',
+    );
+    _rejectReplacementAndClear(
+      cardCloseIcon,
+      clearCardCloseIcon,
+      'cardCloseIcon',
+      'clearCardCloseIcon',
     );
     _rejectReplacementAndClear(
       cardIconColor,
@@ -265,8 +321,18 @@ class DashronymTheme extends ThemeExtension<DashronymTheme> {
       acronymStyle: clearAcronymStyle
           ? null
           : acronymStyle ?? this.acronymStyle,
+      acronymFocusColor: clearAcronymFocusColor
+          ? null
+          : acronymFocusColor ?? this.acronymFocusColor,
       cardWidth: cardWidth ?? this.cardWidth,
       cardElevation: cardElevation ?? this.cardElevation,
+      cardColor: clearCardColor ? null : cardColor ?? this.cardColor,
+      cardShadowColor: clearCardShadowColor
+          ? null
+          : cardShadowColor ?? this.cardShadowColor,
+      cardBorderSide: clearCardBorderSide
+          ? null
+          : cardBorderSide ?? this.cardBorderSide,
       cardPadding: cardPadding ?? this.cardPadding,
       hoverShowDelay: hoverShowDelay ?? this.hoverShowDelay,
       hoverHideDelay: identical(hoverHideDelay, _sentinel)
@@ -275,8 +341,10 @@ class DashronymTheme extends ThemeExtension<DashronymTheme> {
       tooltipFadeDuration: tooltipFadeDuration ?? this.tooltipFadeDuration,
       enableHover: enableHover ?? this.enableHover,
       cardBorderRadius: cardBorderRadius ?? this.cardBorderRadius,
-      cardIcon: cardIcon ?? this.cardIcon,
-      cardCloseIcon: cardCloseIcon ?? this.cardCloseIcon,
+      cardIcon: clearCardIcon ? null : cardIcon ?? this.cardIcon,
+      cardCloseIcon: clearCardCloseIcon
+          ? null
+          : cardCloseIcon ?? this.cardCloseIcon,
       cardIconColor: clearCardIconColor
           ? null
           : cardIconColor ?? this.cardIconColor,
@@ -313,16 +381,20 @@ class DashronymTheme extends ThemeExtension<DashronymTheme> {
       decorationStyle: other.decorationStyle,
       decorationThickness: other.decorationThickness ?? decorationThickness,
       acronymStyle: other.acronymStyle ?? acronymStyle,
+      acronymFocusColor: other.acronymFocusColor ?? acronymFocusColor,
       cardWidth: other.cardWidth,
       cardElevation: other.cardElevation,
+      cardColor: other.cardColor ?? cardColor,
+      cardShadowColor: other.cardShadowColor ?? cardShadowColor,
+      cardBorderSide: other.cardBorderSide ?? cardBorderSide,
       cardPadding: other.cardPadding,
       hoverShowDelay: other.hoverShowDelay,
       hoverHideDelay: other.hoverHideDelay ?? hoverHideDelay,
       tooltipFadeDuration: other.tooltipFadeDuration,
       enableHover: other.enableHover,
       cardBorderRadius: other.cardBorderRadius,
-      cardIcon: other.cardIcon,
-      cardCloseIcon: other.cardCloseIcon,
+      cardIcon: other.cardIcon ?? cardIcon,
+      cardCloseIcon: other.cardCloseIcon ?? cardCloseIcon,
       cardIconColor: other.cardIconColor ?? cardIconColor,
       cardTitleStyle: other.cardTitleStyle ?? cardTitleStyle,
       cardSubtitleStyle: other.cardSubtitleStyle ?? cardSubtitleStyle,
@@ -342,10 +414,9 @@ class DashronymTheme extends ThemeExtension<DashronymTheme> {
 
   /// Interpolates between this theme and [other].
   ///
-  /// This makes `DashronymTheme` suitable for
-  /// `ThemeData.extensions` and animated app-theme transitions.
-  @override
-  DashronymTheme lerp(covariant DashronymTheme? other, double t) {
+  /// Use it to animate between themes, for example with a `TweenAnimationBuilder`
+  /// or from an app-theme transition.
+  DashronymTheme lerp(DashronymTheme? other, double t) {
     if (other == null) return this;
 
     return DashronymTheme(
@@ -361,8 +432,24 @@ class DashronymTheme extends ThemeExtension<DashronymTheme> {
         t,
       ),
       acronymStyle: TextStyle.lerp(acronymStyle, other.acronymStyle, t),
+      acronymFocusColor: _lerpDerivedColor(
+        acronymFocusColor,
+        other.acronymFocusColor,
+        t,
+      ),
       cardWidth: lerpDouble(cardWidth, other.cardWidth, t)!,
       cardElevation: lerpDouble(cardElevation, other.cardElevation, t)!,
+      cardColor: _lerpDerivedColor(cardColor, other.cardColor, t),
+      cardShadowColor: _lerpDerivedColor(
+        cardShadowColor,
+        other.cardShadowColor,
+        t,
+      ),
+      cardBorderSide: _lerpNullableBorderSide(
+        cardBorderSide,
+        other.cardBorderSide,
+        t,
+      ),
       cardPadding: EdgeInsets.lerp(cardPadding, other.cardPadding, t)!,
       hoverShowDelay: _lerpDuration(
         hoverShowDelay,
@@ -387,7 +474,7 @@ class DashronymTheme extends ThemeExtension<DashronymTheme> {
       )!,
       cardIcon: _select(cardIcon, other.cardIcon, t),
       cardCloseIcon: _select(cardCloseIcon, other.cardCloseIcon, t),
-      cardIconColor: Color.lerp(cardIconColor, other.cardIconColor, t),
+      cardIconColor: _lerpDerivedColor(cardIconColor, other.cardIconColor, t),
       cardTitleStyle: TextStyle.lerp(
         cardTitleStyle,
         other.cardTitleStyle,
@@ -465,8 +552,12 @@ class DashronymTheme extends ThemeExtension<DashronymTheme> {
     decorationStyle,
     decorationThickness,
     acronymStyle,
+    acronymFocusColor,
     cardWidth,
     cardElevation,
+    cardColor,
+    cardShadowColor,
+    cardBorderSide,
     cardPadding,
     hoverShowDelay,
     hoverHideDelay,
@@ -496,6 +587,24 @@ class DashronymTheme extends ThemeExtension<DashronymTheme> {
   static double? _lerpNullableDouble(double? begin, double? end, double t) {
     if (begin == null || end == null) return _select(begin, end, t);
     return lerpDouble(begin, end, t);
+  }
+
+  /// Lerps a color whose null value means "derive it from the host app".
+  ///
+  /// The derived color isn't known here, so while either side is null the
+  /// value switches at the midpoint instead of fading through transparent.
+  static Color? _lerpDerivedColor(Color? begin, Color? end, double t) {
+    if (begin == null || end == null) return _select(begin, end, t);
+    return Color.lerp(begin, end, t);
+  }
+
+  static BorderSide? _lerpNullableBorderSide(
+    BorderSide? begin,
+    BorderSide? end,
+    double t,
+  ) {
+    if (begin == null || end == null) return _select(begin, end, t);
+    return BorderSide.lerp(begin, end, t);
   }
 
   static Duration _lerpDuration(Duration begin, Duration end, double t) {

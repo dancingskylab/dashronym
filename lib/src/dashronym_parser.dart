@@ -30,33 +30,30 @@ import 'dashronym_registry.dart';
 ///
 /// final widget = Text.rich(TextSpan(children: spans));
 /// ```
-class DashronymParser {
-  /// Creates a parser that converts matched acronyms into inline tooltip widgets.
-  DashronymParser({
-    required this.registry,
-    required this.config,
-    required this.theme,
-    required this.baseStyle,
-    this.tooltipBuilder,
-  }) : _core = DashronymParserCore(registry: registry, config: config);
-
+class DashronymParser({
   /// Dictionary of acronyms and their descriptions used for matching.
-  final DashronymRegistry registry;
+  required final DashronymRegistry registry,
 
   /// Parsing options such as marker pairs, minimum/maximum lengths,
   /// and whether to consider bare ALL-CAPS words.
-  final DashronymConfig config;
+  required final DashronymConfig config,
 
   /// Visual and interaction parameters for produced [DashronymInline] widgets.
-  final DashronymTheme theme;
+  required final DashronymTheme theme,
 
   /// Base [TextStyle] applied to text runs and passed to inline widgets.
-  final TextStyle? baseStyle;
+  required final TextStyle? baseStyle,
 
   /// Optional builder for a custom tooltip widget.
-  final DashronymTooltipBuilder? tooltipBuilder;
+  final DashronymTooltipBuilder? tooltipBuilder,
+}) {
+  /// Creates a parser that converts matched acronyms into inline tooltip widgets.
+  this;
 
-  final DashronymParserCore _core;
+  final DashronymParserCore _core = DashronymParserCore(
+    registry: registry,
+    config: config,
+  );
 
   /// Converts [input] into a sequence of [InlineSpan]s with glossary tooltips.
   ///
@@ -85,8 +82,8 @@ class DashronymParser {
             semanticsIdentifier: tokenSemanticsIdentifier,
           ),
           DashronymMatchToken(:final acronym, :final description) => WidgetSpan(
-            alignment: PlaceholderAlignment.baseline,
-            baseline: TextBaseline.alphabetic,
+            alignment: .baseline,
+            baseline: .alphabetic,
             child: DashronymInline(
               acronym: acronym,
               description: description,
@@ -105,6 +102,6 @@ class DashronymParser {
       );
     }
 
-    return List<InlineSpan>.unmodifiable(spans);
+    return List<InlineSpan>.unmodifiableOf(spans);
   }
 }

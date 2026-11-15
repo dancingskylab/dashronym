@@ -23,7 +23,7 @@
 ///       acronym: 'SDK',
 ///       description: 'Software Development Kit',
 ///       theme: myDashronymTheme,
-///       textStyle: Theme.of(context).textTheme.bodyMedium,
+///       textStyle: DefaultTextStyle.of(context).style,
 ///     ),
 ///     const Text('before continuing.'),
 ///   ],
@@ -33,11 +33,13 @@ library;
 
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show internal;
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, internal;
+import 'package:flutter/widgets.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 
+import 'dashronym_card_palette.dart';
 import 'dashronym_localizations.dart';
 import 'dashronym_theme.dart';
 import 'dashronym_tooltip_card.dart';
@@ -49,9 +51,10 @@ import 'dashronym_tooltip_overlay.dart';
 ///
 /// The function receives the current [BuildContext] and a [DashronymTooltipDetails]
 /// object describing the selected term. Return any widget you want to display as the
-/// tooltip body (e.g. a custom card, sheet, etc.).
+/// tooltip body, typically built from your app's design system.
 ///
 /// ### Example
+/// Using the standalone `material_ui` package (any design system works):
 /// ```dart
 /// DashronymText(
 ///   'The (CI) build passed.',
@@ -79,36 +82,33 @@ import 'dashronym_tooltip_overlay.dart';
 ///   },
 /// );
 /// ```
-typedef DashronymTooltipBuilder =
-    Widget Function(BuildContext context, DashronymTooltipDetails details);
+typedef DashronymTooltipBuilder = Widget Function(
+  BuildContext context,
+  DashronymTooltipDetails details,
+);
 
 /// Data surfaced to [DashronymTooltipBuilder] implementations.
-class DashronymTooltipDetails {
-  /// Creates tooltip metadata provided to custom tooltip builders.
-  const DashronymTooltipDetails({
-    required this.acronym,
-    required this.description,
-    required this.theme,
-    required this.hideTooltip,
-  });
-
+class const DashronymTooltipDetails({
   /// The acronym shown by the inline trigger.
-  final String acronym;
+  required final String acronym,
 
   /// The long-form description associated with [acronym].
-  final String description;
+  required final String description,
 
   /// The effective theme driving tooltip styling.
-  final DashronymTheme theme;
+  required final DashronymTheme theme,
 
   /// Callback that hides the tooltip overlay.
-  final VoidCallback hideTooltip;
+  required final VoidCallback hideTooltip,
+}) {
+  /// Creates tooltip metadata provided to custom tooltip builders.
+  this;
 }
 
 /// An inline, tappable acronym that shows an accessible tooltip card.
 ///
 /// When activated (tap/Enter/Space) or focused/hovered (if enabled), this
-/// widget opens a Material overlay positioned near the inline text. The overlay
+/// widget opens an overlay positioned near the inline text. The overlay
 /// renders a small card (see [DashronymTooltipCard]) with the acronym and its
 /// full [description]. It supports keyboard, screen reader, and pointer
 /// interactions:
@@ -134,7 +134,7 @@ class DashronymTooltipDetails {
 ///           acronym: 'SDK',
 ///           description: 'Software Development Kit',
 ///           theme: myDashronymTheme,
-///           textStyle: Theme.of(context).textTheme.bodyMedium,
+///           textStyle: DefaultTextStyle.of(context).style,
 ///         ),
 ///       ),
 ///     ],
@@ -244,6 +244,9 @@ class _DashronymInlineState extends State<DashronymInline>
   bool _isDisposing = false;
   int _visibilityGeneration = 0;
   Orientation? _lastOrientation;
+  Object? _viewMetrics;
+  bool _triggerHasPrimaryFocus = false;
+  final FocusTraversalPolicy _traversalPolicy = OrderedTraversalPolicy();
 
   @override
   void initState() {
@@ -257,6 +260,7 @@ class _DashronymInlineState extends State<DashronymInline>
       hoverHideDelay:
           widget.theme.hoverHideDelay ?? widget.theme.hoverShowDelay,
     );
+    _interaction.triggerFocusNode.addListener(_handleTriggerFocusNodeChange);
     _fadeController = AnimationController(
       vsync: this,
       duration: widget.theme.tooltipFadeDuration,
@@ -281,6 +285,9 @@ class _DashronymInlineState extends State<DashronymInline>
     _tooltipController?.release(this);
     _tooltipController = null;
     _unregisterKeyboardHandler();
+    _interaction.triggerFocusNode.removeListener(
+      _handleTriggerFocusNodeChange,
+    );
     _interaction.dispose();
     _disposeAnimations();
     _fadeController.dispose();
@@ -317,6 +324,12 @@ class _DashronymInlineState extends State<DashronymInline>
   @override
   void didChangeMetrics() {
     super.didChangeMetrics();
+    // Every view's metric change notifies every binding observer. In a
+    // multi-window app, ignore changes that belong to other views.
+    // Without a view to compare, hide as before.
+    final metrics = _currentViewMetrics();
+    if (metrics != null && metrics == _viewMetrics) return;
+    _viewMetrics = metrics;
     final orientation = _windowOrientation();
     if (_tooltipVisible) {
       _hide(immediate: true);
@@ -339,6 +352,7 @@ class _DashronymInlineState extends State<DashronymInline>
       _tooltipController?.release(this);
       _tooltipController = nextTooltipController;
     }
+    _viewMetrics = _currentViewMetrics();
     final orientation = MediaQuery.maybeOf(context)?.orientation;
     if (orientation != null && _lastOrientation != orientation) {
       if (_lastOrientation != null) {
@@ -347,6 +361,22 @@ class _DashronymInlineState extends State<DashronymInline>
       _lastOrientation = orientation;
     }
     _attachScrollListener();
+  }
+
+  /// The metrics of this trigger's view that affect where its card goes.
+  Object? _currentViewMetrics() {
+    final view = View.maybeOf(context);
+    if (view == null) return null;
+    final ratio = view.devicePixelRatio;
+    return (
+      view.physicalSize,
+      ratio,
+      EdgeInsets.fromViewPadding(view.padding, ratio),
+      EdgeInsets.fromViewPadding(view.viewPadding, ratio),
+      EdgeInsets.fromViewPadding(view.viewInsets, ratio),
+      // The same list until this view's configuration changes.
+      view.displayFeatures,
+    );
   }
 
   Orientation? _windowOrientation() {
@@ -427,6 +457,9 @@ class _DashronymInlineState extends State<DashronymInline>
   /// the same press from also dismissing an enclosing dialog or route.
   KeyEventResult _handleEarlyEscape(KeyEvent event) {
     if (!_dismissesOnEscape(event)) return KeyEventResult.ignored;
+    // Close the topmost layer first: a tooltip shown for a control inside the
+    // card, such as the close button's label, goes before the card itself.
+    if (RawTooltip.dismissAllToolTips()) return KeyEventResult.handled;
     _hide(restoreFocus: _interaction.tooltipFocusScope.hasFocus);
     return KeyEventResult.handled;
   }
@@ -484,6 +517,16 @@ class _DashronymInlineState extends State<DashronymInline>
           );
         }),
       );
+    });
+  }
+
+  // The trigger's semantics node reports focus itself (see build), so track
+  // primary focus the way Focus does.
+  void _handleTriggerFocusNodeChange() {
+    final hasPrimaryFocus = _interaction.triggerFocusNode.hasPrimaryFocus;
+    if (hasPrimaryFocus == _triggerHasPrimaryFocus) return;
+    setState(() {
+      _triggerHasPrimaryFocus = hasPrimaryFocus;
     });
   }
 
@@ -589,6 +632,7 @@ class _DashronymInlineState extends State<DashronymInline>
           description: widget.description,
           theme: widget.theme,
           onClose: () => _hide(restoreFocus: true),
+          textColorHint: widget.textStyle?.color,
         );
   }
 
@@ -607,7 +651,11 @@ class _DashronymInlineState extends State<DashronymInline>
     }
     if (_showFocusHighlight) {
       style = style.copyWith(
-        backgroundColor: Theme.of(context).focusColor,
+        backgroundColor: DashronymCardPalette.focusHighlight(
+          context,
+          widget.theme,
+          style.color,
+        ),
       );
     }
     return style;
@@ -623,9 +671,14 @@ class _DashronymInlineState extends State<DashronymInline>
       locale: widget.locale,
     );
 
+    // The Semantics below speaks for the whole trigger: it carries the label
+    // and the tap action, so the text and the gesture detector stay silent.
+    // Otherwise the duplicate tap action splits the trigger into two nodes and
+    // screen readers stop on the acronym twice.
     Widget result = GestureDetector(
       onTap: () => _interaction.handleTriggerTap(wasVisible: _tooltipVisible),
-      behavior: HitTestBehavior.opaque,
+      behavior: .opaque,
+      excludeFromSemantics: true,
       child: MouseRegion(
         onEnter: widget.theme.enableHover
             ? (_) => _interaction.handleTriggerEnter()
@@ -634,7 +687,7 @@ class _DashronymInlineState extends State<DashronymInline>
             ? (_) => _interaction.handleTriggerExit()
             : null,
         cursor: SystemMouseCursors.click,
-        child: textWidget,
+        child: ExcludeSemantics(child: textWidget),
       ),
     );
 
@@ -659,6 +712,7 @@ class _DashronymInlineState extends State<DashronymInline>
 
     result = FocusableActionDetector(
       focusNode: _interaction.triggerFocusNode,
+      includeFocusSemantics: false,
       onFocusChange: _interaction.handleTriggerFocusChange,
       onShowFocusHighlight: (show) {
         if (show == _showFocusHighlight || !mounted) return;
@@ -683,6 +737,16 @@ class _DashronymInlineState extends State<DashronymInline>
       child: result,
     );
 
+    // Tab moves from the trigger into its open card, wherever the card sits,
+    // then on to whatever follows the trigger.
+    result = FocusTraversalGroup(
+      policy: _traversalPolicy,
+      child: FocusTraversalOrder(
+        order: const NumericFocusOrder(0),
+        child: result,
+      ),
+    );
+
     final attributeRange = TextRange(
       start: 0,
       end: widget.acronym.length,
@@ -697,21 +761,39 @@ class _DashronymInlineState extends State<DashronymInline>
         ? null
         : AttributedString(widget.acronym, attributes: labelAttributes);
 
+    // Since Flutter 3.41, a node that sets its own locale no longer absorbs
+    // children without that locale. Set it only when it differs from the
+    // ambient one, so the overlay's traversal anchor merges into this node and
+    // screen readers read the card right after the acronym.
+    final subtreeLocale = widget.locale == Localizations.maybeLocaleOf(context)
+        ? null
+        : widget.locale;
+
     return Semantics(
-      // Flutter 3.38 requires nodes that assign a locale to their subtree to
-      // establish a semantics container. Keep this conditional so triggers
-      // without authored locale metadata preserve their existing tree shape.
-      container: widget.locale != null,
+      // Like a button, the trigger is always its own node, so it never merges
+      // with neighboring text.
+      container: true,
       button: true,
       expanded: _tooltipVisible,
+      // FocusableActionDetector leaves focus out of the tree; this node
+      // reports it instead, as Focus would, so a trigger with its own locale
+      // still exposes one focusable node.
+      focusable: true,
+      focused: _triggerHasPrimaryFocus,
+      // Focus leaves this off on iOS (flutter/flutter#150030).
+      onFocus: defaultTargetPlatform == TargetPlatform.iOS
+          ? null
+          : _interaction.triggerFocusNode.requestFocus,
       label: attributedLabel == null ? widget.acronym : null,
       attributedLabel: attributedLabel,
       identifier: widget.semanticsIdentifier,
-      localeForSubtree: widget.locale,
+      localeForSubtree: subtreeLocale,
       hint: _tooltipVisible
           ? strings.semanticsHintHide(widget.acronym)
           : strings.semanticsHintShow(widget.acronym),
       onTap: _toggle,
+      onExpand: _tooltipVisible ? null : _show,
+      onCollapse: _tooltipVisible ? _hide : null,
       child: result,
     );
   }

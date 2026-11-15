@@ -15,8 +15,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  LATEST_FLUTTER_VERSION: "3.47.9"
-  NEXT_FLUTTER_VERSION: "3.50.0"
+  # The pubspec minimum is also the latest stable release, so one strict lane
+  # covers both until Flutter ships a newer stable.
+  LATEST_FLUTTER_VERSION: "3.50.0"
 
 jobs:
   validate:
@@ -27,9 +28,7 @@ jobs:
       fail-fast: false
       matrix:
         flutter-version:
-          - "3.38.1"
-          - "3.44.9"
-          - "3.47.9"
+          - "3.50.0"
 
     steps:
       - name: Check out repository
@@ -52,12 +51,34 @@ jobs:
         if: matrix.flutter-version == env.LATEST_FLUTTER_VERSION
         run: dart format --output=none --set-exit-if-changed .
 
+      - name: Keep lib free of design-system dependencies
+        shell: bash
+        run: |
+          pattern="package:(flutter/(material|cupertino)\.dart|material_ui/|cupertino_ui/)"
+          if grep -rnE "^\s*(import|export)\s+['\"]${pattern}" lib; then
+            echo "lib/ must stay design-system agnostic; see CONTRIBUTING.md."
+            exit 1
+          fi
+
+      - name: Lint the agent skills
+        run: python3 .github/scripts/check_skills.py skills
+
       - name: Run strict static analysis
         run: flutter analyze --fatal-infos
 
       - name: Run tests
         # Pixel goldens are verified on their canonical macOS renderer below.
         run: flutter test --exclude-tags golden
+
+      - name: Analyze the example app
+        working-directory: example
+        run: |
+          flutter pub get
+          flutter analyze --fatal-infos
+
+      - name: Test the example app with Material, Cupertino and widgets hosts
+        working-directory: example
+        run: flutter test
 
       - name: Build API documentation without warnings
         if: matrix.flutter-version == env.LATEST_FLUTTER_VERSION
@@ -74,10 +95,9 @@ jobs:
         if: matrix.flutter-version == env.LATEST_FLUTTER_VERSION
         run: dart pub publish --dry-run
 
-  next-stable:
-    # Flutter 3.50 deprecates package:flutter/material.dart, which 0.2.x still
-    # imports. Report on it without blocking merges; 0.3.0 moves to it.
-    name: Next stable Flutter (non-blocking)
+  canary:
+    # Early warning about the next Flutter release. Never blocks merges.
+    name: Flutter beta (non-blocking)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     continue-on-error: true
@@ -86,21 +106,48 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v7
 
-      - name: Set up Flutter
+      - name: Set up Flutter beta
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.NEXT_FLUTTER_VERSION }}
+          channel: beta
+          cache: true
+
+      - name: Report toolchain
+        run: flutter --version
+
+      - name: Resolve dependencies
+        run: flutter pub get
+
+      - name: Run static analysis
+        run: flutter analyze --no-fatal-infos
+
+      - name: Run tests
+        run: flutter test --exclude-tags golden
+
+  web:
+    # Web keyboard and semantics behave differently (for example, Enter maps
+    # to ButtonActivateIntent). Never blocks merges.
+    name: Web tests on Chrome (non-blocking)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up latest supported Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.LATEST_FLUTTER_VERSION }}
           channel: stable
           cache: true
 
       - name: Resolve dependencies
         run: flutter pub get
 
-      - name: Run static analysis (deprecation infos allowed)
-        run: flutter analyze --no-fatal-infos
-
-      - name: Run tests
-        run: flutter test --exclude-tags golden
+      - name: Run tests on Chrome
+        run: flutter test --platform chrome --exclude-tags golden
 
   coverage:
     name: Coverage
@@ -142,7 +189,8 @@ jobs:
 
   goldens:
     name: Golden tests
-    runs-on: macos-latest
+    # Pinned so a runner image change cannot shift rendering under the goldens.
+    runs-on: macos-26
     timeout-minutes: 20
 
     steps:
@@ -161,3 +209,12 @@ jobs:
 
       - name: Verify macOS golden images
         run: flutter test --tags golden
+
+      - name: Upload golden failure images
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: golden-failures
+          path: test/**/failures/
+          if-no-files-found: ignore
+          retention-days: 14

@@ -7,23 +7,28 @@ import 'dart:ui' show PointerDeviceKind, SemanticsAction, Tristate;
 import 'package:dashronym/dashronym.dart';
 import 'package:dashronym/src/dashronym_inline.dart';
 import 'package:dashronym/src/dashronym_tooltip_card.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+
+import 'support/dashronym_test_host.dart';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 const _closeTooltip = 'Hide definition for SDK';
+
+/// Android's minimum touch target, also Material's _minTarget.
+const _minTarget = 48.0;
 
 Future<void> _pumpTrigger(
   WidgetTester tester, {
   TextDirection textDirection = TextDirection.ltr,
 }) {
   return tester.pumpWidget(
-    MaterialApp(
+    TestWidgetsApp(
       localizationsDelegates: const [DashronymLocalizations.delegate],
-      supportedLocales: DashronymLocalizations.supportedLocales,
       home: Directionality(
         textDirection: textDirection,
-        child: Scaffold(
+        child: TestPage(
           body: Center(
             child: FocusTraversalGroup(
               child: const DashronymInline(
@@ -101,8 +106,8 @@ void main() {
     expect(data.flagsCollection.isFocused, isNot(Tristate.none));
     expect(data.tooltip, _closeTooltip);
     expect(data.hasAction(SemanticsAction.tap), isTrue);
-    expect(close.rect.width, greaterThanOrEqualTo(kMinInteractiveDimension));
-    expect(close.rect.height, greaterThanOrEqualTo(kMinInteractiveDimension));
+    expect(close.rect.width, greaterThanOrEqualTo(_minTarget));
+    expect(close.rect.height, greaterThanOrEqualTo(_minTarget));
     semantics.dispose();
   });
 
