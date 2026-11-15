@@ -7,25 +7,25 @@
 
 Dashronym turns acronyms in Flutter text into accessible inline definition
 tooltips. Give it a map of terms and descriptions, then use it with an existing
-`Text` or with `DashronymText`.
+`Text` or with `DashronymText`. It works in any Flutter app, whatever its design
+system.
 
 ## Requirements
 
-Dashronym `0.2.x` requires:
+Dashronym `0.3.x` requires:
 
-- Dart `>=3.10.0 <4.0.0`
-- Flutter `>=3.38.1`
+- Dart `^3.14.0`
+- Flutter `>=3.50.0`
 
-On iOS, Flutter 3.41.0 through 3.44.9 and 3.47.0 through 3.47.6 report the
-position of overlay content incorrectly to VoiceOver, so VoiceOver focus can
-miss an open definition. If VoiceOver support matters, use Flutter 3.38.x,
-3.47.7 or later, or 3.50 or later.
+Apps on older Flutter releases can keep using Dashronym `0.2.x`, which supports
+Flutter 3.38.1 and later. See the [migration guide](MIGRATION.md) to move from
+0.2.x.
 
 ## Installation
 
 ```yaml
 dependencies:
-  dashronym: ^0.2.0
+  dashronym: ^0.3.0
 ```
 
 Then run `flutter pub get` and import the package:
@@ -137,47 +137,146 @@ Text.rich(
 Existing `WidgetSpan`s are preserved. A `TextSpan` with its own
 `semanticsLabel` remains an author-controlled accessibility boundary.
 
+`DashronymText` takes the same layout arguments as `Text`, including `hyphens`,
+and applies the text-spacing overrides that platforms such as the web publish
+for accessibility. Acronyms keep their order in right-to-left and
+mixed-direction text.
+
+## Works with any design system
+
+Dashronym uses only Flutter's widgets library, so it works the same in a
+`MaterialApp` (from `package:flutter/material.dart` or the standalone
+`material_ui` package), a `CupertinoApp`, a `WidgetsApp`, or an app with its own
+design system. It adds no design-system package to your dependencies.
+
+Out of the box, the definition card takes its look from the app around it:
+
+- The surface is light or dark to contrast with the surrounding text color,
+  falling back to the platform brightness.
+- Text uses the ambient `DefaultTextStyle` when it's readable on the surface.
+- Icons use the ambient `IconTheme` color when it contrasts with the surface.
+- The info and close icons are painted, so no icon font is needed.
+
+To match a design system exactly, map its theme to a `DashronymTheme` once, as
+shown in [Theme](#theme).
+
 ## Theme
 
 Pass a `DashronymTheme` to one widget or a `DashronymScope`, or provide it to
-the whole app with `DashronymThemeScope`:
+the whole app with `DashronymThemeScope`. Placing the scope in the app's
+`builder` applies it to every route:
 
 ```dart
-MaterialApp(
-  builder: (context, child) => DashronymThemeScope(
-    data: const DashronymTheme(
-      acronymStyle: TextStyle(color: Colors.indigo),
-      cardElevation: 10,
-      tooltipMaxWidth: 360,
-    ),
-    child: child!,
+// In MaterialApp, CupertinoApp or WidgetsApp:
+builder: (context, child) => DashronymThemeScope(
+  data: const DashronymTheme(
+    acronymStyle: TextStyle(color: Color(0xFF3F51B5)),
+    tooltipMaxWidth: 360,
   ),
-  home: DashronymScope(
-    registry: acronyms,
-    child: const Article(),
-  ),
-)
+  child: child!,
+),
 ```
 
-Placing the scope in the app's `builder` applies it to every route.
 Dashronym resolves the theme in this order:
 
 1. A theme passed to `DashronymText` or `Text.dashronyms()`.
-2. `DashronymScope.theme`.
-3. The nearest `DashronymThemeScope`.
-4. A `DashronymTheme` installed in `ThemeData.extensions`.
-5. The package defaults.
+2. The nearest `DashronymScope.theme` or `DashronymThemeScope`, whichever is
+   closer.
+3. The package defaults.
 
-Prefer `DashronymThemeScope` to `ThemeData.extensions`. Flutter's standalone
-`material_ui` package uses different theme types from
-`package:flutter/material.dart`, so a theme extension registered with one is
-invisible to the other. Dashronym 0.3.0 stops reading `ThemeData.extensions`.
+Colors the theme leaves unset come from the host app, as described in
+[Works with any design system](#works-with-any-design-system). Set `cardColor`,
+`cardShadowColor`, `cardBorderSide`, `cardIconColor` or `acronymFocusColor` to
+choose them yourself, and `cardIcon` or `cardCloseIcon` to use your own icons.
 
-In 0.2.x the stock card still takes its surface color, and any icon color or
-text styles the theme leaves unset, from the `package:flutter/material.dart`
-theme. Apps on the standalone `material_ui` package can set `cardIconColor`,
-`cardTitleStyle` and `cardSubtitleStyle` explicitly, or use a custom
-`tooltipBuilder`.
+### Material
+
+This recipe from the [example app](example/lib/material_theme.dart) gives the
+card the colors, type and icons of a Material theme, as Dashronym 0.2 did:
+
+```dart
+/// Maps a Material [ThemeData] onto a [DashronymTheme].
+///
+/// Dashronym does not depend on Material. Install the result with a
+/// [DashronymThemeScope] in `MaterialApp.builder` to give the tooltip card
+/// Material colors, type and icons. The builder runs below `AnimatedTheme`, so
+/// the card follows light, dark and animated theme changes.
+DashronymTheme dashronymThemeFromMaterial(ThemeData theme) {
+  final colors = theme.colorScheme;
+  return DashronymTheme(
+    acronymStyle: TextStyle(color: colors.primary),
+    acronymFocusColor: theme.focusColor,
+    cardColor: colors.surface,
+    cardShadowColor: colors.shadow,
+    cardIconColor: colors.primary,
+    cardTitleStyle: theme.textTheme.titleMedium?.copyWith(
+      fontWeight: FontWeight.w700,
+      color: colors.onSurface,
+    ),
+    cardSubtitleStyle: theme.textTheme.bodyMedium?.copyWith(
+      color: colors.onSurfaceVariant,
+    ),
+    cardIcon: Icons.info_outline,
+    cardCloseIcon: Icons.close,
+  );
+}
+```
+
+Install it in `MaterialApp.builder`:
+
+```dart
+MaterialApp(
+  theme: ThemeData(colorSchemeSeed: Colors.indigo),
+  darkTheme: ThemeData(
+    colorSchemeSeed: Colors.indigo,
+    brightness: Brightness.dark,
+  ),
+  builder: (context, child) => DashronymThemeScope(
+    data: dashronymThemeFromMaterial(Theme.of(context)),
+    child: child!,
+  ),
+  home: const Article(),
+)
+```
+
+### Cupertino
+
+The [Cupertino recipe](example/lib/cupertino_theme.dart) uses system colors and
+Cupertino icons:
+
+```dart
+/// Maps the ambient Cupertino theme onto a [DashronymTheme].
+///
+/// Install the result with a [DashronymThemeScope] in `CupertinoApp.builder`
+/// to give the tooltip card system colors, type and SF Symbols-style icons.
+DashronymTheme dashronymThemeFromCupertino(BuildContext context) {
+  final theme = CupertinoTheme.of(context);
+  final body = theme.textTheme.textStyle;
+  return DashronymTheme(
+    acronymStyle: TextStyle(color: theme.primaryColor),
+    cardColor: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(
+      context,
+    ),
+    cardIconColor: theme.primaryColor,
+    cardTitleStyle: body.copyWith(fontWeight: FontWeight.w600),
+    cardSubtitleStyle: body.copyWith(
+      color: CupertinoColors.secondaryLabel.resolveFrom(context),
+    ),
+    cardIcon: CupertinoIcons.info,
+    cardCloseIcon: CupertinoIcons.xmark,
+  );
+}
+```
+
+```dart
+CupertinoApp(
+  builder: (context, child) => DashronymThemeScope(
+    data: dashronymThemeFromCupertino(context),
+    child: child!,
+  ),
+  home: const Article(),
+)
+```
 
 ## Custom tooltip content
 
@@ -203,21 +302,29 @@ DashronymText(
 )
 ```
 
-Dashronym still handles overlay positioning, viewport constraints, focus, and
-dismissal. Your builder just owns the content.
+The builder can use widgets from any design system. Dashronym still handles
+overlay positioning, viewport constraints, focus, and dismissal. Your builder
+just owns the content.
 
 ## Accessibility and interaction
 
-Matched terms are keyboard-focusable controls.
+Matched terms are keyboard-focusable disclosure buttons.
 
-- Tap, click, Enter, or Space opens or toggles a definition.
-- Escape, an outside tap, scrolling, or a viewport change dismisses it.
-- Focus can move into custom tooltip controls and returns to the trigger
-  after closing.
+- Tap, click, Enter, or Space opens or toggles a definition, including Enter on
+  the web.
+- Tab moves from an acronym into its open card, then on to the next control.
+- Escape closes the open card and returns focus to the acronym, without also
+  closing an enclosing dialog.
+- An outside tap, scrolling, or resizing the window dismisses the card.
 - At most one tooltip is open per `DashronymScope`; independent scopes don't
   interfere with each other.
-- Tooltip surfaces stay within the visible viewport.
-- Definition state and content are exposed to assistive technologies.
+- Cards stay within the visible viewport, clear of the keyboard and system
+  bars.
+- Screen readers meet each acronym once, as a button with an expanded state,
+  expand and collapse actions, and a hint. The open card is read right after
+  the acronym.
+- With Reduce Motion on, cards fade in without scaling. With high contrast on,
+  cards get an outline and focus indicators get stronger.
 
 Custom builders should keep their controls keyboard-reachable, label them
 clearly, and call `details.hideTooltip` to close. Test with real assistive
@@ -240,7 +347,8 @@ back safely for other locales.
 
 ## Resources
 
-- [Example application](example/main.dart)
+- [Example application](example/lib/main.dart), with Material, Cupertino and
+  widgets-only hosts
 - [Migration guide](MIGRATION.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
