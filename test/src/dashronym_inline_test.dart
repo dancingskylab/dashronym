@@ -4,15 +4,17 @@ import 'package:dashronym/dashronym.dart';
 import 'package:dashronym/src/dashronym_inline.dart';
 import 'package:dashronym/src/dashronym_tooltip_card.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+
+import 'support/dashronym_test_host.dart';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Widget _testHarness(Widget child) {
-  return MaterialApp(
+  return TestWidgetsApp(
     localizationsDelegates: const [DashronymLocalizations.delegate],
-    supportedLocales: DashronymLocalizations.supportedLocales,
-    home: Scaffold(body: Center(child: child)),
+    home: TestPage(body: Center(child: child)),
   );
 }
 
@@ -600,7 +602,7 @@ void main() {
   testWidgets('tooltip updates content and inherits the trigger theme', (
     tester,
   ) async {
-    final color = ValueNotifier(Colors.indigo);
+    final color = ValueNotifier(Color(0xFF3F51B5));
     final description = ValueNotifier('First definition');
     addTearDown(color.dispose);
     addTearDown(description.dispose);
@@ -613,13 +615,10 @@ void main() {
             return ValueListenableBuilder<String>(
               valueListenable: description,
               builder: (context, currentDescription, _) {
-                return Theme(
-                  data: Theme.of(context).copyWith(
-                    colorScheme: ColorScheme.fromSeed(
-                      seedColor: currentColor,
-                      primary: currentColor,
-                    ),
-                  ),
+                // Any inherited theme around the trigger, here IconTheme,
+                // must reach the tooltip content built in the overlay.
+                return IconTheme(
+                  data: IconThemeData(color: currentColor),
                   child: DashronymInline(
                     acronym: 'API',
                     description: currentDescription,
@@ -630,7 +629,7 @@ void main() {
                     tooltipBuilder: (context, details) {
                       return ColoredBox(
                         key: const ValueKey('custom-tooltip'),
-                        color: Theme.of(context).colorScheme.primary,
+                        color: IconTheme.of(context).color!,
                         child: Text(details.description),
                       );
                     },
@@ -646,30 +645,36 @@ void main() {
     await tester.tap(find.text('API'));
     await tester.pumpAndSettle();
     expect(find.text('First definition'), findsOneWidget);
-    expect(tester.widget<Text>(find.text('API')).style?.color, Colors.indigo);
+    expect(
+      tester.widget<Text>(find.text('API')).style?.color,
+      Color(0xFF3F51B5),
+    );
     expect(
       tester
           .widget<ColoredBox>(
             find.byKey(const ValueKey('custom-tooltip')),
           )
           .color,
-      Colors.indigo,
+      Color(0xFF3F51B5),
     );
 
     description.value = 'Updated definition';
-    color.value = Colors.teal;
+    color.value = Color(0xFF009688);
     await tester.pumpAndSettle();
 
     expect(find.text('First definition'), findsNothing);
     expect(find.text('Updated definition'), findsOneWidget);
-    expect(tester.widget<Text>(find.text('API')).style?.color, Colors.teal);
+    expect(
+      tester.widget<Text>(find.text('API')).style?.color,
+      Color(0xFF009688),
+    );
     expect(
       tester
           .widget<ColoredBox>(
             find.byKey(const ValueKey('custom-tooltip')),
           )
           .color,
-      Colors.teal,
+      Color(0xFF009688),
     );
   });
 
@@ -891,7 +896,8 @@ void main() {
             return GestureDetector(
               key: tooltipKey,
               onTap: details.hideTooltip,
-              child: Material(
+              child: PhysicalModel(
+                color: const Color(0xFFFFFFFF),
                 elevation: 2,
                 child: Padding(
                   padding: const EdgeInsets.all(8),

@@ -1,7 +1,10 @@
 import 'package:dashronym/dashronym.dart';
 import 'package:dashronym/src/dashronym_inline.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+
+import 'support/dashronym_test_host.dart';
+
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -25,7 +28,7 @@ void main() {
       'Our (API) is public.',
     ).dashronyms(registry: registry, config: const DashronymConfig());
 
-    await tester.pumpWidget(MaterialApp(home: Scaffold(body: widget)));
+    await tester.pumpWidget(TestWidgetsApp(home: TestPage(body: widget)));
 
     expect(find.byType(DashronymInline), findsOneWidget);
   });
@@ -66,7 +69,7 @@ void main() {
         semanticsLabel: 'Author SDK label',
       );
       final source = TextSpan(
-        style: const TextStyle(color: Colors.red),
+        style: const TextStyle(color: Color(0xFFF44336)),
         children: [
           TextSpan(
             text: 'Use API now. ',
@@ -93,7 +96,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        MaterialApp(home: Scaffold(body: result)),
+        TestWidgetsApp(home: TestPage(body: result)),
       );
 
       expect(find.byType(DashronymInline), findsOneWidget);
@@ -111,7 +114,7 @@ void main() {
             )
             .style,
         isA<TextStyle>()
-            .having((style) => style.color, 'color', Colors.red)
+            .having((style) => style.color, 'color', Color(0xFFF44336))
             .having(
               (style) => style.fontWeight,
               'fontWeight',
@@ -157,13 +160,13 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
+      TestWidgetsApp(
         home: DashronymScope(
           registry: DashronymRegistry({
             'API': 'Application Programming Interface',
           }),
           config: const DashronymConfig(enableBareAcronyms: true),
-          child: Scaffold(
+          child: TestPage(
             body: const Text('Use API').dashronyms(),
           ),
         ),
@@ -189,8 +192,8 @@ void main() {
       );
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
+        TestWidgetsApp(
+          home: TestPage(
             body: Text.rich(source).dashronyms(
               registry: DashronymRegistry({
                 'API': 'Application Programming Interface',
@@ -240,12 +243,12 @@ void main() {
     final registry = DashronymRegistry({'SDK': 'Software Development Kit'});
 
     await tester.pumpWidget(
-      MaterialApp(
+      TestWidgetsApp(
         home: MediaQuery(
           data: const MediaQueryData(boldText: true),
           child: DefaultTextStyle(
             style: const TextStyle(fontSize: 14),
-            child: Scaffold(
+            child: TestPage(
               body: const Text(
                 'SDK launch successful',
               ).dashronyms(registry: registry),
@@ -273,8 +276,8 @@ void main() {
     final registry = DashronymRegistry({'SDK': 'Software Development Kit'});
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
+      TestWidgetsApp(
+        home: TestPage(
           body: const Text(
             'SDK ready',
             style: TextStyle(inherit: false, fontSize: 22),

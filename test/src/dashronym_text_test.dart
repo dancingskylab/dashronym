@@ -1,6 +1,9 @@
 import 'package:dashronym/dashronym.dart';
 import 'package:dashronym/src/dashronym_inline.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+
+import 'support/dashronym_test_host.dart';
+
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -15,7 +18,7 @@ void main() {
       textScaler: const TextScaler.linear(1.5),
     );
 
-    await tester.pumpWidget(MaterialApp(home: Scaffold(body: widget)));
+    await tester.pumpWidget(TestWidgetsApp(home: TestPage(body: widget)));
 
     final richText = tester.widgetList<RichText>(find.byType(RichText)).first;
     final span = richText.text as TextSpan;
@@ -30,8 +33,8 @@ void main() {
     final semantics = tester.ensureSemantics();
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
+      TestWidgetsApp(
+        home: TestPage(
           body: DashronymText(
             'Use (SDK) with the (API).',
             registry: DashronymRegistry({
@@ -66,12 +69,12 @@ void main() {
       final registry = DashronymRegistry({'SDK': 'Software Development Kit'});
 
       await tester.pumpWidget(
-        MaterialApp(
+        TestWidgetsApp(
           home: MediaQuery(
             data: const MediaQueryData(boldText: true),
             child: DefaultTextStyle(
               style: const TextStyle(fontSize: 12),
-              child: Scaffold(
+              child: TestPage(
                 body: DashronymText(
                   'This SDK is powerful.',
                   registry: registry,
@@ -105,8 +108,8 @@ void main() {
 
   testWidgets('DashronymText respects non-inherited style', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
+      TestWidgetsApp(
+        home: TestPage(
           body: DashronymText(
             'SDK docs',
             registry: DashronymRegistry({'SDK': 'Software Development Kit'}),
@@ -131,12 +134,12 @@ void main() {
     const style = TextStyle(fontSize: 20, height: 1);
 
     await tester.pumpWidget(
-      MaterialApp(
+      TestWidgetsApp(
         home: MediaQuery(
           data: const MediaQueryData(
             textScaler: TextScaler.linear(2),
           ),
-          child: Scaffold(
+          child: TestPage(
             body: Column(
               children: [
                 Row(
@@ -155,7 +158,8 @@ void main() {
                       style: style,
                       textScaler: const TextScaler.linear(2),
                       tooltipBuilder: (context, details) {
-                        return const Material(
+                        return const ColoredBox(
+                          color: Color(0xFFFFFFFF),
                           child: Text(
                             'A B',
                             key: tooltipKey,
@@ -227,12 +231,12 @@ void main() {
     'WidgetSpan keeps explicit direction and locale while tooltip keeps scaler',
     (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        TestWidgetsApp(
           home: MediaQuery(
             data: const MediaQueryData(
               textScaler: TextScaler.linear(2),
             ),
-            child: Scaffold(
+            child: TestPage(
               body: DashronymText(
                 'Our SDK',
                 registry: DashronymRegistry({
@@ -269,12 +273,16 @@ void main() {
     },
   );
 
-  testWidgets('DashronymText participates in SelectionArea registration', (
+  testWidgets('DashronymText participates in selectable regions', (
     tester,
   ) async {
+    final focusNode = FocusNode();
+    addTearDown(focusNode.dispose);
     await tester.pumpWidget(
-      MaterialApp(
-        home: SelectionArea(
+      TestWidgetsApp(
+        home: SelectableRegion(
+          focusNode: focusNode,
+          selectionControls: emptyTextSelectionControls,
           child: DashronymText(
             'Our SDK is selectable.',
             registry: DashronymRegistry({
@@ -305,20 +313,20 @@ void main() {
         'API': 'Explicit definition',
       });
       const appTheme = DashronymTheme(
-        acronymStyle: TextStyle(color: Colors.red),
+        acronymStyle: TextStyle(color: Color(0xFFF44336)),
       );
       const scopeTheme = DashronymTheme(
-        acronymStyle: TextStyle(color: Colors.green),
+        acronymStyle: TextStyle(color: Color(0xFF4CAF50)),
       );
       const explicitTheme = DashronymTheme(
-        acronymStyle: TextStyle(color: Colors.blue),
+        acronymStyle: TextStyle(color: Color(0xFF2196F3)),
       );
 
       await tester.pumpWidget(
-        MaterialApp(
+        TestWidgetsApp(
           builder: (context, child) =>
               DashronymThemeScope(data: appTheme, child: child!),
-          home: Scaffold(
+          home: TestPage(
             body: Column(
               children: [
                 DashronymScope(
@@ -441,8 +449,8 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      const MaterialApp(
-        home: Scaffold(body: DashronymText('API')),
+      const TestWidgetsApp(
+        home: TestPage(body: DashronymText('API')),
       ),
     );
 

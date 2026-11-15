@@ -1,6 +1,9 @@
 import 'package:dashronym/dashronym.dart';
 import 'package:dashronym/src/dashronym_tooltip_card.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+
+import 'support/dashronym_test_host.dart';
+
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -10,11 +13,10 @@ void main() {
     final onClose = ValueNotifier(false);
 
     await tester.pumpWidget(
-      MaterialApp(
+      TestWidgetsApp(
         localizationsDelegates: const [DashronymLocalizations.delegate],
-        supportedLocales: DashronymLocalizations.supportedLocales,
-        home: Material(
-          child: DashronymTooltipCard(
+        home: TestPage(
+          body: DashronymTooltipCard(
             acronym: 'SDK',
             description: 'Software Development Kit',
             theme: const DashronymTheme(),
@@ -39,11 +41,10 @@ void main() {
     const theme = DashronymTheme(tooltipMinWidth: 180, tooltipMaxWidth: 220);
 
     await tester.pumpWidget(
-      MaterialApp(
+      TestWidgetsApp(
         localizationsDelegates: const [DashronymLocalizations.delegate],
-        supportedLocales: DashronymLocalizations.supportedLocales,
-        home: Material(
-          child: DashronymTooltipCard(
+        home: TestPage(
+          body: DashronymTooltipCard(
             acronym: 'API',
             description: 'Application Programming Interface',
             theme: theme,
@@ -68,9 +69,8 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
+      TestWidgetsApp(
         localizationsDelegates: const [DashronymLocalizations.delegate],
-        supportedLocales: DashronymLocalizations.supportedLocales,
         home: MediaQuery(
           data: const MediaQueryData(size: Size(640, 360)),
           child: Center(
