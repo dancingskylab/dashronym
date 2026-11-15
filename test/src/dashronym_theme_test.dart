@@ -311,4 +311,23 @@ void main() {
     expect(withBorder.lerp(withoutBorder, 0.4).cardBorderSide, _outline);
     expect(withBorder.lerp(withoutBorder, 0.6).cardBorderSide, isNull);
   });
+
+  test('DashronymTheme.lerp interpolates nullable values when both exist', () {
+    const begin = DashronymTheme(
+      decorationThickness: 1,
+      hoverHideDelay: Duration(milliseconds: 100),
+      tooltipMinWidth: 100,
+    );
+    const end = DashronymTheme(
+      decorationThickness: 3,
+      hoverHideDelay: Duration(milliseconds: 300),
+      tooltipMinWidth: 200,
+    );
+
+    final midpoint = begin.lerp(end, 0.5);
+
+    expect(midpoint.decorationThickness, 2);
+    expect(midpoint.hoverHideDelay, const Duration(milliseconds: 200));
+    expect(midpoint.tooltipMinWidth, 150);
+  });
 }

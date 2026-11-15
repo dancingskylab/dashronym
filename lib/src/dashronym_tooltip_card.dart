@@ -1,23 +1,29 @@
 /// Tooltip card widget used by Dashronym inline controls.
 ///
-/// The card now caps its width using the viewport and theme-provided limits,
+/// The card caps its width using the viewport and theme-provided limits,
 /// letting the subtitle wrap naturally across multiple lines while keeping the
 /// title constrained to a single line with ellipsis. This maintains a tidy
 /// layout without bespoke text measurement logic.
 library;
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
+import 'dashronym_card_palette.dart';
+import 'dashronym_close_button.dart';
+import 'dashronym_glyphs.dart';
 import 'dashronym_localizations.dart';
 import 'dashronym_theme.dart';
 import 'dashronym_tooltip_constraints.dart';
 
 /// A compact, accessible tooltip card displaying an acronym and its description.
 ///
+/// The card is built from widgets-layer primitives and needs no design system.
+/// Colors and icons that [theme] leaves unset are derived from the host app;
+/// see [DashronymTheme.cardColor] and [DashronymTheme.cardIcon].
+///
 /// ### Sizing rules
 /// The card caps its width to the tightest available limit from the viewport or
-/// theme and otherwise shrink-wraps to the intrinsic width of its content,
-/// letting the description wrap with natural word breaks. When
+/// theme. The description wraps with natural word breaks. When
 /// [DashronymTheme.tooltipMaxWidth] is set, it overrides the portrait fallback
 /// to [DashronymTheme.cardWidth]. The acronym stays a single trimmed line.
 ///
@@ -40,6 +46,7 @@ class DashronymTooltipCard extends StatelessWidget {
     required this.description,
     required this.theme,
     required this.onClose,
+    this.textColorHint,
   });
 
   /// The short acronym shown as the title (e.g., `"SDK"`).
@@ -54,58 +61,135 @@ class DashronymTooltipCard extends StatelessWidget {
   /// Invoked when the trailing close button is pressed.
   final VoidCallback onClose;
 
-  /// Builds the Material tooltip card.
+  /// The trigger's resolved text color, used to pick a contrasting surface.
+  final Color? textColorHint;
+
+  /// Content widths below this hide the decorative leading glyph, so the
+  /// title, description and close button keep their room.
+  static const double _minWidthForGlyph = 160;
+
+  /// Minimum row height, matching a two-line Material 3 list tile.
+  static const double _minRowHeight = 72;
+
+  /// Gap between the glyph, the text and the close button.
+  static const double _gap = 16;
+
+  /// Builds the tooltip card.
   @override
   Widget build(BuildContext context) {
     final strings = DashronymLocalizations.of(context);
-
     final mq = MediaQuery.maybeOf(context);
-    final iconColor =
-        theme.cardIconColor ?? Theme.of(context).colorScheme.primary;
-    final titleStyle =
-        theme.cardTitleStyle ??
-        Theme.of(
-          context,
-        ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700);
-    final subtitleStyle =
-        theme.cardSubtitleStyle ?? Theme.of(context).textTheme.bodyMedium;
+    final palette = DashronymCardPalette.resolve(
+      context,
+      theme,
+      textColorHint: textColorHint,
+    );
+    final base = DefaultTextStyle.of(context).style;
+    final titleStyle = base
+        .merge(
+          TextStyle(
+            color: palette.foreground,
+            fontWeight: FontWeight.w700,
+            decoration: TextDecoration.none,
+          ),
+        )
+        .merge(theme.cardTitleStyle);
+    final subtitleStyle = base
+        .merge(
+          TextStyle(
+            color: palette.foreground,
+            decoration: TextDecoration.none,
+          ),
+        )
+        .merge(theme.cardSubtitleStyle);
+    final leading = theme.cardIcon == null
+        ? DashronymGlyphIcon(DashronymGlyph.info, color: palette.icon)
+        : Icon(theme.cardIcon, color: palette.icon, size: 24);
 
-    final card = Material(
-      elevation: theme.cardElevation,
-      borderRadius: BorderRadius.circular(theme.cardBorderRadius),
-      clipBehavior: Clip.antiAlias,
-      child: SingleChildScrollView(
-        primary: false,
+    Widget content = SingleChildScrollView(
+      primary: false,
+      child: Padding(
+        padding: theme.cardPadding,
         child: Padding(
-          padding: theme.cardPadding,
-          child: ListTile(
-            leading: Icon(
-              theme.cardIcon ?? Icons.info_outline,
-              color: iconColor,
-            ),
-            minLeadingWidth: theme.cardMinLeadingWidth,
-            title: Text(
-              acronym,
-              style: titleStyle,
-              maxLines: 1,
-              softWrap: false,
-              overflow: TextOverflow.ellipsis,
-              textWidthBasis: TextWidthBasis.longestLine,
-            ),
-            subtitle: Text(
-              description,
-              style: subtitleStyle,
-              softWrap: true,
-            ),
-            trailing: IconButton(
-              tooltip: strings.closeButtonTooltip(acronym),
-              icon: Icon(theme.cardCloseIcon ?? Icons.close, color: iconColor),
-              onPressed: onClose,
-            ),
-            contentPadding: theme.cardContentPadding,
+          padding: theme.cardContentPadding,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final showGlyph = constraints.maxWidth >= _minWidthForGlyph;
+              return ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: _minRowHeight),
+                child: Row(
+                  children: [
+                    if (showGlyph) ...[
+                      ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minWidth: theme.cardMinLeadingWidth,
+                        ),
+                        child: Center(widthFactor: 1, child: leading),
+                      ),
+                      const SizedBox(width: _gap),
+                    ],
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              acronym,
+                              style: titleStyle,
+                              maxLines: 1,
+                              softWrap: false,
+                              overflow: TextOverflow.ellipsis,
+                              textWidthBasis: TextWidthBasis.longestLine,
+                            ),
+                            Text(
+                              description,
+                              style: subtitleStyle,
+                              softWrap: true,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: _gap),
+                    DashronymCloseButton(
+                      tooltip: strings.closeButtonTooltip(acronym),
+                      onPressed: onClose,
+                      palette: palette,
+                      icon: theme.cardCloseIcon,
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
         ),
       ),
+    );
+
+    final shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(theme.cardBorderRadius),
+    );
+    if (palette.border != BorderSide.none) {
+      content = DecoratedBox(
+        position: DecorationPosition.foreground,
+        decoration: ShapeDecoration(
+          shape: shape.copyWith(side: palette.border),
+        ),
+        child: content,
+      );
+    }
+    final card = PhysicalShape(
+      clipper: ShapeBorderClipper(
+        shape: shape,
+        textDirection: Directionality.maybeOf(context),
+      ),
+      clipBehavior: Clip.antiAlias,
+      elevation: theme.cardElevation,
+      color: palette.surface,
+      shadowColor: palette.shadow,
+      child: content,
     );
 
     Widget result = card;

@@ -277,4 +277,46 @@ void main() {
       expect(FocusManager.instance.primaryFocus, same(inner), reason: '$key');
     }
   });
+
+  testWidgets('DismissIntent from other shortcuts closes a visible card', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        localizationsDelegates: [DashronymLocalizations.delegate],
+        home: Scaffold(
+          body: Center(
+            child: DashronymInline(
+              acronym: 'SDK',
+              description: 'Software Development Kit',
+              theme: DashronymTheme(enableHover: false),
+              textStyle: TextStyle(),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // From the focused trigger.
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pumpAndSettle();
+    final trigger = FocusManager.instance.primaryFocus!;
+    expect(find.byType(DashronymTooltipCard), findsOneWidget);
+    Actions.invoke(trigger.context!, const DismissIntent());
+    await tester.pumpAndSettle();
+    expect(find.byType(DashronymTooltipCard), findsNothing);
+    expect(FocusManager.instance.primaryFocus, same(trigger));
+
+    // From a control inside the card, which hands focus back to the trigger.
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    final inside = FocusManager.instance.primaryFocus!;
+    expect(inside, isNot(same(trigger)));
+    Actions.invoke(inside.context!, const DismissIntent());
+    await tester.pumpAndSettle();
+    expect(find.byType(DashronymTooltipCard), findsNothing);
+    expect(FocusManager.instance.primaryFocus, same(trigger));
+  });
 }

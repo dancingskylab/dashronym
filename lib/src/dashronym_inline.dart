@@ -34,10 +34,11 @@ library;
 import 'dart:async';
 
 import 'package:flutter/foundation.dart' show internal;
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 
+import 'dashronym_card_palette.dart';
 import 'dashronym_localizations.dart';
 import 'dashronym_theme.dart';
 import 'dashronym_tooltip_card.dart';
@@ -429,6 +430,9 @@ class _DashronymInlineState extends State<DashronymInline>
   /// the same press from also dismissing an enclosing dialog or route.
   KeyEventResult _handleEarlyEscape(KeyEvent event) {
     if (!_dismissesOnEscape(event)) return KeyEventResult.ignored;
+    // Close the topmost layer first: a tooltip shown for a control inside the
+    // card, such as the close button's label, goes before the card itself.
+    if (RawTooltip.dismissAllToolTips()) return KeyEventResult.handled;
     _hide(restoreFocus: _interaction.tooltipFocusScope.hasFocus);
     return KeyEventResult.handled;
   }
@@ -591,6 +595,7 @@ class _DashronymInlineState extends State<DashronymInline>
           description: widget.description,
           theme: widget.theme,
           onClose: () => _hide(restoreFocus: true),
+          textColorHint: widget.textStyle?.color,
         );
   }
 
@@ -609,7 +614,11 @@ class _DashronymInlineState extends State<DashronymInline>
     }
     if (_showFocusHighlight) {
       style = style.copyWith(
-        backgroundColor: Theme.of(context).focusColor,
+        backgroundColor: DashronymCardPalette.focusHighlight(
+          context,
+          widget.theme,
+          style.color,
+        ),
       );
     }
     return style;

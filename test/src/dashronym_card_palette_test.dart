@@ -122,13 +122,22 @@ void main() {
     expect(light.foreground, DashronymCardPalette.lightForeground);
   });
 
-  testWidgets('the trigger color hint beats the ambient text color', (
-    tester,
-  ) async {
-    final palette = await _resolve(tester, textColor: _black, hint: _white);
+  testWidgets('the trigger color picks the surface', (tester) async {
+    // Light trigger text in a light app, such as a dark banner, gets a dark
+    // card. The app's dark body text lacks contrast there, so the card falls
+    // back to a neutral light foreground.
+    final banner = await _resolve(tester, textColor: _black, hint: _white);
+    expect(banner.surface, DashronymCardPalette.darkSurface);
+    expect(banner.foreground, DashronymCardPalette.darkForeground);
 
-    expect(palette.surface, DashronymCardPalette.darkSurface);
-    expect(palette.foreground, _white);
+    // A brand-colored trigger keeps the app's body text color in the card.
+    final branded = await _resolve(
+      tester,
+      textColor: _black,
+      hint: const Color(0xFF3F51B5),
+    );
+    expect(branded.surface, DashronymCardPalette.lightSurface);
+    expect(branded.foreground, _black);
   });
 
   testWidgets('low-contrast text falls back to a neutral foreground', (

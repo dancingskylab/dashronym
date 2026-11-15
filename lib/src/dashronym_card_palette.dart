@@ -27,23 +27,28 @@ class DashronymCardPalette {
 
   /// Derives the palette for [theme] from the host around [context].
   ///
-  /// [textColorHint] is the trigger's resolved text color. It is preferred to
-  /// the ambient [DefaultTextStyle] because a `DashronymText` can carry its
-  /// own style.
+  /// [textColorHint] is the trigger's resolved text color. It picks the
+  /// surface, because a `DashronymText` can carry its own style, such as light
+  /// text on a dark banner. The card's text uses the ambient
+  /// [DefaultTextStyle] color, the app's body text, when it contrasts with
+  /// the surface.
   factory DashronymCardPalette.resolve(
     BuildContext context,
     DashronymTheme theme, {
     Color? textColorHint,
   }) {
-    final hint = textColorHint ?? DefaultTextStyle.of(context).style.color;
+    final ambient = DefaultTextStyle.of(context).style.color;
     final surface =
         theme.cardColor ??
-        surfaceFor(hint, MediaQuery.maybePlatformBrightnessOf(context));
+        surfaceFor(
+          textColorHint ?? ambient,
+          MediaQuery.maybePlatformBrightnessOf(context),
+        );
     final isDark = isDarkColor(surface);
     final neutral = isDark ? darkForeground : lightForeground;
     final foreground =
-        hint != null && contrastRatio(hint, surface) >= minTextContrast
-        ? hint
+        ambient != null && contrastRatio(ambient, surface) >= minTextContrast
+        ? ambient
         : neutral;
 
     final ambientIcon = IconTheme.of(context).color;

@@ -304,7 +304,9 @@ void main() {
 
     final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
     await gesture.addPointer();
-    await gesture.moveTo(tester.getCenter(find.byType(IconButton)));
+    await gesture.moveTo(
+      tester.getCenter(find.byTooltip('Hide definition for SDK')),
+    );
     await tester.pump(const Duration(seconds: 1));
 
     expect(find.byTooltip('Hide definition for SDK'), findsOneWidget);

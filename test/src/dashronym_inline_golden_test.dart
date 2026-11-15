@@ -1,10 +1,19 @@
 import 'dart:ui';
 
 import 'package:dashronym/dashronym.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:dashronym/src/dashronym_inline.dart';
 import 'package:dashronym/src/dashronym_tooltip_constraints.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+/// Light host colors and body text, standing in for a typical app.
+const _hostBackground = Color(0xFFFFFBFE);
+const _hostText = TextStyle(
+  color: Color(0xFF1C1B1F),
+  fontSize: 14,
+  height: 1.43,
+  letterSpacing: 0.25,
+);
 
 Future<void> _pumpInline(
   WidgetTester tester, {
@@ -21,13 +30,15 @@ Future<void> _pumpInline(
   });
 
   await tester.pumpWidget(
-    MaterialApp(
-      debugShowCheckedModeBanner: false,
+    TestWidgetsApp(
+      color: _hostBackground,
+      textStyle: _hostText,
       localizationsDelegates: const [DashronymLocalizations.delegate],
       home: Directionality(
         textDirection: textDirection,
-        child: Scaffold(
-          body: SizedBox(
+        child: ColoredBox(
+          color: _hostBackground,
+          child: SizedBox(
             height: height ?? surfaceSize.height,
             child: Align(
               alignment: alignment,
@@ -48,10 +59,14 @@ Future<void> _pumpInline(
 }
 
 void main() {
+  // Goldens must not include the debug-mode banner.
+  setUp(() => WidgetsApp.debugAllowBannerOverride = false);
+  tearDown(() => WidgetsApp.debugAllowBannerOverride = true);
+
   testWidgets('DashronymInline golden - default state', (tester) async {
     await _pumpInline(tester);
     await expectLater(
-      find.byType(MaterialApp),
+      find.byType(TestWidgetsApp),
       matchesGoldenFile('goldens/dashronym_inline_default.png'),
     );
   }, tags: const ['golden']);
@@ -61,7 +76,7 @@ void main() {
     await tester.tap(find.text('SDK'));
     await tester.pumpAndSettle(const Duration(milliseconds: 300));
     await expectLater(
-      find.byType(MaterialApp),
+      find.byType(TestWidgetsApp),
       matchesGoldenFile('goldens/dashronym_inline_open.png'),
     );
   }, tags: const ['golden']);
@@ -82,7 +97,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await expectLater(
-      find.byType(MaterialApp),
+      find.byType(TestWidgetsApp),
       matchesGoldenFile('goldens/dashronym_inline_hover.png'),
     );
 
@@ -95,7 +110,7 @@ void main() {
     await tester.tap(find.text('SDK'));
     await tester.pumpAndSettle(const Duration(milliseconds: 300));
     await expectLater(
-      find.byType(MaterialApp),
+      find.byType(TestWidgetsApp),
       matchesGoldenFile('goldens/dashronym_inline_rtl_open.png'),
     );
   }, tags: const ['golden']);
@@ -110,7 +125,7 @@ void main() {
     await tester.tap(find.text('SDK'));
     await tester.pumpAndSettle(const Duration(milliseconds: 300));
     await expectLater(
-      find.byType(MaterialApp),
+      find.byType(TestWidgetsApp),
       matchesGoldenFile('goldens/dashronym_inline_flipped.png'),
     );
   }, tags: const ['golden']);
@@ -125,7 +140,7 @@ void main() {
     await tester.tap(find.text('SDK'));
     await tester.pumpAndSettle(const Duration(milliseconds: 300));
     await expectLater(
-      find.byType(MaterialApp),
+      find.byType(TestWidgetsApp),
       matchesGoldenFile('goldens/dashronym_inline_landscape.png'),
     );
   }, tags: const ['golden']);
@@ -139,9 +154,12 @@ void main() {
       surfaceSize: const Size(640, 360),
       height: 360,
       tooltipBuilder: (context, details) {
-        return Material(
+        return DecoratedBox(
           key: customTooltipKey,
-          borderRadius: BorderRadius.circular(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFFFFF),
+            borderRadius: BorderRadius.circular(12),
+          ),
           child: SizedBox(
             width: 900,
             child: const Padding(
