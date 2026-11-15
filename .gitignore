@@ -44,3 +44,5 @@ test/**/failures/
 
 agents.md
 /CLAUDE.md
+# Widget Preview related
+.widget_preview/
