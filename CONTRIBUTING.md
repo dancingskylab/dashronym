@@ -15,12 +15,23 @@ proposals are welcome.
 
 ## Setup
 
+Dashronym requires Flutter 3.50 or later.
+
 ```sh
 flutter pub get
 flutter test --exclude-tags golden
 ```
 
 On macOS you can also run the pixel goldens: `flutter test --tags golden`.
+
+The example app in `example/` is its own package with Material, Cupertino and
+widgets-only hosts:
+
+```sh
+cd example
+flutter pub get
+flutter test
+```
 
 The repo includes Dart agent skills under `.agents/skills` and works with
 editors that support the Dart/Flutter MCP server, but neither is required.
@@ -35,6 +46,7 @@ python3 .github/scripts/check_lcov.py coverage/lcov.info \
   --min-lines 95 --min-branches 85
 dart doc --output .dart_tool/api-docs
 dart pub publish --dry-run
+(cd example && flutter analyze --fatal-infos && flutter test)
 ```
 
 CI enforces 95% line / 85% branch coverage and treats any dartdoc warning as
@@ -48,6 +60,19 @@ renderer) and explain what changed and why:
 flutter test --update-goldens test/src/dashronym_inline_golden_test.dart
 ```
 
+## Design-system neutrality
+
+The package works in any app because `lib/` uses only Flutter's widgets,
+foundation, services and semantics libraries:
+
+- `lib/` and the root `test/` must not import `package:flutter/material.dart`,
+  `package:flutter/cupertino.dart`, `material_ui` or `cupertino_ui`. A CI step
+  and a unit test enforce this.
+- Root tests run in the widgets-only host from
+  `test/src/support/dashronym_test_host.dart`, built on `TestWidgetsApp`.
+- Code that shows Dashronym with a design system belongs in `example/`, which
+  also holds the theme recipes that the API docs embed.
+
 ## Testing
 
 - Every bug fix needs a regression test.
@@ -55,6 +80,8 @@ flutter test --update-goldens test/src/dashronym_inline_golden_test.dart
 - Widget-test focus, keyboard, hover, semantics, overlay lifecycle, text
   scaling, and directionality.
 - Check RTL and large text scales when a change touches layout.
+- When a change touches keyboard handling or semantics, also run the web
+  tests: `flutter test --platform chrome --exclude-tags golden`.
 
 ## API and accessibility
 
