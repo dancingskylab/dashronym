@@ -58,4 +58,34 @@ void main() {
     expect(card.bottom, lessThanOrEqualTo(800 - 300));
     expect(card.top, greaterThanOrEqualTo(40));
   });
+
+  testWidgets('a 120 px wide window fits the card without overflow', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(120, 480);
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      testHost(
+        const Align(
+          alignment: Alignment.topCenter,
+          child: DashronymInline(
+            acronym: 'SDK',
+            description: 'Software Development Kit',
+            theme: DashronymTheme(enableHover: false),
+            textStyle: TextStyle(),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('SDK'));
+    await tester.pumpAndSettle();
+
+    // An overflow would have failed the test with a layout error.
+    final card = tester.getRect(find.byType(DashronymTooltipCard));
+    expect(card.left, greaterThanOrEqualTo(0));
+    expect(card.right, lessThanOrEqualTo(120));
+    expect(find.byTooltip('Hide definition for SDK'), findsOneWidget);
+  });
 }

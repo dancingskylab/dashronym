@@ -78,12 +78,19 @@ void main() {
 
     for (final acronym in ['SDK', 'API']) {
       expect(_nodesLabeled(acronym), hasLength(1), reason: acronym);
-      final data = _trigger(acronym);
-      expect(data.flagsCollection.isButton, isTrue);
-      expect(data.flagsCollection.isFocused, isNot(Tristate.none));
-      expect(data.flagsCollection.isExpanded, Tristate.isFalse);
-      expect(data.hasAction(SemanticsAction.tap), isTrue);
-      expect(data.hasAction(SemanticsAction.focus), isTrue);
+      expect(
+        _triggerNode(acronym),
+        isSemantics(
+          label: acronym,
+          isButton: true,
+          isFocusable: true,
+          isFocused: false,
+          hasExpandedState: true,
+          isExpanded: false,
+          hasTapAction: true,
+          hasFocusAction: true,
+        ),
+      );
     }
     semantics.dispose();
   });

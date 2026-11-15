@@ -240,6 +240,40 @@ void main() {
       expect(probeKey.currentState, same(state));
     });
   });
+
+  testWidgets('InheritedTheme.capture carries the theme to other subtrees', (
+    tester,
+  ) async {
+    const theme = DashronymTheme(cardWidth: 280);
+    late CapturedThemes themes;
+    await _pumpInApp(
+      tester,
+      DashronymThemeScope(
+        data: theme,
+        child: Builder(
+          builder: (context) {
+            themes = InheritedTheme.capture(from: context, to: null);
+            return const SizedBox();
+          },
+        ),
+      ),
+    );
+
+    // Like an overlay or a new route, outside the scope.
+    DashronymTheme? seen;
+    await _pumpInApp(
+      tester,
+      themes.wrap(
+        Builder(
+          builder: (context) {
+            seen = DashronymThemeScope.of(context);
+            return const SizedBox();
+          },
+        ),
+      ),
+    );
+    expect(seen, theme);
+  });
 }
 
 class _StateProbe extends StatefulWidget {

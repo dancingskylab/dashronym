@@ -514,22 +514,6 @@ void main() {
   testWidgets('announcements use one platform-appropriate semantics path', (
     tester,
   ) async {
-    final messages = <Object?>[];
-    tester.binding.defaultBinaryMessenger.setMockDecodedMessageHandler<Object?>(
-      SystemChannels.accessibility,
-      (message) async {
-        messages.add(message);
-        return null;
-      },
-    );
-    addTearDown(
-      () => tester.binding.defaultBinaryMessenger
-          .setMockDecodedMessageHandler<Object?>(
-            SystemChannels.accessibility,
-            null,
-          ),
-    );
-
     await tester.pumpWidget(
       _testHarness(
         const MediaQuery(
@@ -547,21 +531,17 @@ void main() {
     await tester.tap(find.text('API'));
     await tester.pumpAndSettle();
 
-    final announcements = messages
-        .whereType<Map<Object?, Object?>>()
-        .where((message) => message['type'] == 'announce')
-        .toList();
-    expect(announcements, hasLength(1));
-    expect(
-      (announcements.single['data'] as Map<Object?, Object?>)['message'],
-      'Showing definition for API. Application Programming Interface',
-    );
+    expect(tester.takeAnnouncements(), [
+      isAccessibilityAnnouncement(
+        'Showing definition for API. Application Programming Interface',
+        textDirection: TextDirection.ltr,
+      ),
+    ]);
     final tooltipSemantics = tester.getSemantics(
       find.byType(DashronymTooltipCard),
     );
     expect(tooltipSemantics.flagsCollection.isLiveRegion, isFalse);
 
-    messages.clear();
     await tester.pumpWidget(
       _testHarness(
         const MediaQuery(
@@ -579,12 +559,7 @@ void main() {
     await tester.tap(find.text('SDK').first);
     await tester.pumpAndSettle();
 
-    expect(
-      messages.whereType<Map<Object?, Object?>>().where(
-        (message) => message['type'] == 'announce',
-      ),
-      isEmpty,
-    );
+    expect(tester.takeAnnouncements(), isEmpty);
     final fallbackTooltipSemantics = tester.getSemantics(
       find.byType(DashronymTooltipCard),
     );
