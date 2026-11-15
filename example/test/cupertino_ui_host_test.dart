@@ -1,6 +1,7 @@
 // Dashronym inside apps built on package:cupertino_ui.
 import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:dashronym/dashronym.dart';
+import 'package:dashronym_example/cupertino_theme.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support.dart';
@@ -61,6 +62,34 @@ void main() {
     expect(
       tester.widget<Icon>(find.byIcon(CupertinoIcons.info)).color,
       primary,
+    );
+    expect(find.byIcon(CupertinoIcons.xmark), findsOneWidget);
+  });
+
+  testWidgets('the Cupertino recipe gives the card system colors', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      CupertinoApp(
+        theme: const CupertinoThemeData(
+          primaryColor: CupertinoColors.systemIndigo,
+        ),
+        builder: (context, child) => DashronymThemeScope(
+          data: dashronymThemeFromCupertino(context),
+          child: child!,
+        ),
+        home: CupertinoPageScaffold(
+          child: Center(child: DashronymText('SDK', registry: _registry)),
+        ),
+      ),
+    );
+    await tester.tap(find.text('SDK'));
+    await tester.pumpAndSettle();
+
+    final context = tester.element(find.byType(CupertinoPageScaffold));
+    expect(
+      cardSurface(tester),
+      CupertinoColors.secondarySystemGroupedBackground.resolveFrom(context),
     );
     expect(find.byIcon(CupertinoIcons.xmark), findsOneWidget);
   });

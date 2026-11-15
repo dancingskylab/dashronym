@@ -1,7 +1,7 @@
 import 'package:dashronym/dashronym.dart';
 import 'package:material_ui/material_ui.dart';
 
-// #docregion material-recipe
+// #region material-recipe
 /// Maps a Material [ThemeData] onto a [DashronymTheme].
 ///
 /// Dashronym does not depend on Material. Install the result with a
@@ -27,4 +27,4 @@ DashronymTheme dashronymThemeFromMaterial(ThemeData theme) {
     cardCloseIcon: Icons.close,
   );
 }
-// #enddocregion material-recipe
+// #endregion material-recipe

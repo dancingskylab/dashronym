@@ -34,6 +34,15 @@ import 'dashronym_theme.dart';
 /// widgets-layer theming, such as [DefaultTextStyle] and [IconTheme], so a
 /// Material, Cupertino or custom app gets a matching card without extra
 /// configuration.
+///
+/// To match a design system exactly, map its theme once in the app's
+/// `builder`. The example app compiles and tests these recipes. For Material:
+///
+/// {@example /example/lib/material_theme.dart#material-recipe}
+///
+/// For Cupertino:
+///
+/// {@example /example/lib/cupertino_theme.dart#cupertino-recipe}
 class DashronymThemeScope extends InheritedTheme {
   /// Creates a scope that provides [data] to [child].
   const DashronymThemeScope({
