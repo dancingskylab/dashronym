@@ -13,6 +13,17 @@ analyzer:
     strict-inference: true
     strict-raw-types: true
 
+linter:
+  rules:
+    # Lints added in Dart 3.12 to 3.14 that flutter_lints doesn't enable yet.
+    - async_return_with_no_await
+    - empty_container_bodies
+    - future_sync_value
+    - simple_directive_paths
+    - simplify_variable_pattern
+    - switch_on_type
+    - unnecessary_unawaited
+
 formatter:
   page_width: 80
   trailing_commas: preserve
