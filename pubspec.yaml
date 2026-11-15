@@ -12,7 +12,7 @@ topics:
   - text
 
 screenshots:
-  - description: 'Animated overview of Dashronym tooltips responding to user taps.'
+  - description: 'Tapping acronyms, a custom tooltip, keyboard navigation and dark mode in the example app.'
     path: screenshots/0_dashronym.gif
   - description: 'Landscape tooltip showcasing custom builder content.'
     path: screenshots/1_dashronym_landscape_tooltip_builder.png
@@ -20,6 +20,8 @@ screenshots:
     path: screenshots/2_dashronym_landscape_tooltip.png
   - description: 'Portrait tooltip with viewport-safe positioning.'
     path: screenshots/3_dashronym_portrait_tooltip.png
+  - description: 'The definition card following a dark theme.'
+    path: screenshots/4_dashronym_dark_tooltip.png
 
 environment:
   sdk: ^3.14.0
