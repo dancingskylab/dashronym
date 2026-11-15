@@ -16,6 +16,11 @@ Dashronym `0.2.x` requires:
 - Dart `>=3.10.0 <4.0.0`
 - Flutter `>=3.38.1`
 
+On iOS, Flutter 3.41.0 through 3.44.9 and 3.47.0 through 3.47.6 report the
+position of overlay content incorrectly to VoiceOver, so VoiceOver focus can
+miss an open definition. If VoiceOver support matters, use Flutter 3.38.x,
+3.47.7 or later, or 3.50 or later.
+
 ## Installation
 
 ```yaml
@@ -134,19 +139,18 @@ Existing `WidgetSpan`s are preserved. A `TextSpan` with its own
 
 ## Theme
 
-Pass a `DashronymTheme` to one widget or install it as a Flutter theme
-extension:
+Pass a `DashronymTheme` to one widget or a `DashronymScope`, or provide it to
+the whole app with `DashronymThemeScope`:
 
 ```dart
 MaterialApp(
-  theme: ThemeData(
-    extensions: const [
-      DashronymTheme(
-        acronymStyle: TextStyle(color: Colors.indigo),
-        cardElevation: 10,
-        tooltipMaxWidth: 360,
-      ),
-    ],
+  builder: (context, child) => DashronymThemeScope(
+    data: const DashronymTheme(
+      acronymStyle: TextStyle(color: Colors.indigo),
+      cardElevation: 10,
+      tooltipMaxWidth: 360,
+    ),
+    child: child!,
   ),
   home: DashronymScope(
     registry: acronyms,
@@ -155,8 +159,19 @@ MaterialApp(
 )
 ```
 
-A theme passed directly to `DashronymText`, `Text.dashronyms()`, or
-`DashronymScope` takes precedence over the app theme.
+Placing the scope in the app's `builder` applies it to every route.
+Dashronym resolves the theme in this order:
+
+1. A theme passed to `DashronymText` or `Text.dashronyms()`.
+2. `DashronymScope.theme`.
+3. The nearest `DashronymThemeScope`.
+4. A `DashronymTheme` installed in `ThemeData.extensions`.
+5. The package defaults.
+
+Prefer `DashronymThemeScope` to `ThemeData.extensions`. Flutter's standalone
+`material_ui` package uses different theme types from
+`package:flutter/material.dart`, so a theme extension registered with one is
+invisible to the other. Dashronym 0.3.0 stops reading `ThemeData.extensions`.
 
 ## Custom tooltip content
 

@@ -18,15 +18,14 @@ class DashronymExampleApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Dashronym example',
-      theme: ThemeData(
-        colorSchemeSeed: Colors.indigo,
-        useMaterial3: true,
-        extensions: const [
-          DashronymTheme(
-            acronymStyle: TextStyle(color: Colors.indigo),
-            tooltipMaxWidth: 360,
-          ),
-        ],
+      theme: ThemeData(colorSchemeSeed: Colors.indigo, useMaterial3: true),
+      // Provide the Dashronym theme to every route of the app.
+      builder: (context, child) => DashronymThemeScope(
+        data: const DashronymTheme(
+          acronymStyle: TextStyle(color: Colors.indigo),
+          tooltipMaxWidth: 360,
+        ),
+        child: child!,
       ),
       home: DashronymScope(
         registry: acronyms,
