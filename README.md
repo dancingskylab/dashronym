@@ -349,6 +349,9 @@ back safely for other locales.
 
 - [Example application](example/lib/main.dart), with Material, Cupertino and
   widgets-only hosts
+- [Agent skill](skills/dashronym-usage/SKILL.md) that teaches AI coding
+  assistants to use Dashronym, for example with
+  `npx skills add dancingskylab/dashronym --skill dashronym-usage`
 - [Migration guide](MIGRATION.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
