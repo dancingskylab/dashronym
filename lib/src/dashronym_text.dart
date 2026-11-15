@@ -276,9 +276,12 @@ class DashronymText extends StatelessWidget {
 
     final textSpan = TextSpan(
       style: resolvedStyle,
-      children: semanticsLabel == null
-          ? spans
-          : spans.map(_withoutPlainTextSemantics).toList(),
+      children: _withDirectionalMarks(
+        semanticsLabel == null
+            ? spans
+            : spans.map(_withoutPlainTextSemantics).toList(),
+        effectiveTextDirection,
+      ),
     );
 
     // Honor the text-spacing overrides that web accessibility settings
@@ -364,8 +367,8 @@ TextStyle? _textSpacingOverride(BuildContext context) {
 /// Merges [override] into [span] and its plain text descendants, as [Text]
 /// does. Widget spans keep their own styling.
 TextSpan _withTextSpacing(TextSpan span, TextStyle override) {
-  return TextSpan(
-    text: span.text,
+  return _copyTextSpan(
+    span,
     children: span.children?.map((child) {
       if (child is TextSpan && child.runtimeType == TextSpan) {
         return _withTextSpacing(child, override);
@@ -373,13 +376,5 @@ TextSpan _withTextSpacing(TextSpan span, TextStyle override) {
       return child;
     }).toList(),
     style: span.style?.merge(override) ?? override,
-    recognizer: span.recognizer,
-    mouseCursor: span.mouseCursor,
-    onEnter: span.onEnter,
-    onExit: span.onExit,
-    semanticsLabel: span.semanticsLabel,
-    semanticsIdentifier: span.semanticsIdentifier,
-    locale: span.locale,
-    spellOut: span.spellOut,
   );
 }

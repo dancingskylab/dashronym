@@ -101,12 +101,13 @@ TextStyle? _mergeTextStyle(TextStyle? inherited, TextStyle? own) {
 TextSpan _copyTextSpan(
   TextSpan span, {
   List<InlineSpan>? children,
+  TextStyle? style,
   String? semanticsLabel,
 }) {
   return TextSpan(
     text: span.text,
     children: children ?? span.children,
-    style: span.style,
+    style: style ?? span.style,
     recognizer: span.recognizer,
     mouseCursor: span.mouseCursor,
     onEnter: span.onEnter,
@@ -130,4 +131,62 @@ InlineSpan _withoutPlainTextSemantics(InlineSpan span) {
     );
   }
   return span;
+}
+
+const _leftToRightMark = TextSpan(text: '\u200E');
+const _rightToLeftMark = TextSpan(text: '\u200F');
+
+final _rightToLeftLetter = RegExp(
+  r'[\p{Script=Hebrew}\p{Script=Arabic}\p{Script=Syriac}\p{Script=Thaana}'
+  r'\p{Script=Nko}\p{Script=Samaritan}\p{Script=Mandaic}\p{Script=Adlam}]',
+  unicode: true,
+);
+final _letter = RegExp(r'\p{L}', unicode: true);
+
+/// The direction of the first letter in [text], or null if it has none.
+TextDirection? _strongDirection(String text) {
+  final letter = _letter.firstMatch(text)?[0];
+  if (letter == null) return null;
+  return _rightToLeftLetter.hasMatch(letter)
+      ? TextDirection.rtl
+      : TextDirection.ltr;
+}
+
+/// Brackets each acronym whose script runs against [paragraphDirection] with
+/// matching directional marks.
+///
+/// Flutter lays out a [WidgetSpan] as U+FFFC, which the Unicode bidi
+/// algorithm treats as neutral. In an Arabic paragraph that mentions
+/// "SDK and API", the placeholders would take the paragraph's direction and
+/// reverse the English run. The marks give each acronym the direction its
+/// text has, so it lays out as the plain words would.
+List<InlineSpan> _withDirectionalMarks(
+  List<InlineSpan> spans,
+  TextDirection paragraphDirection,
+) {
+  final marked = <InlineSpan>[];
+  for (final span in spans) {
+    if (span case WidgetSpan(child: DashronymInline(:final acronym))) {
+      final direction = _strongDirection(acronym);
+      if (direction != null && direction != paragraphDirection) {
+        final mark = direction == TextDirection.ltr
+            ? _leftToRightMark
+            : _rightToLeftMark;
+        marked.addAll([mark, span, mark]);
+        continue;
+      }
+    } else if (span is TextSpan && span.runtimeType == TextSpan) {
+      if (span.children case final children?) {
+        marked.add(
+          _copyTextSpan(
+            span,
+            children: _withDirectionalMarks(children, paragraphDirection),
+          ),
+        );
+        continue;
+      }
+    }
+    marked.add(span);
+  }
+  return marked;
 }
