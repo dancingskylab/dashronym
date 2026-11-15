@@ -67,6 +67,16 @@ jobs:
         # Pixel goldens are verified on their canonical macOS renderer below.
         run: flutter test --exclude-tags golden
 
+      - name: Analyze the example app
+        working-directory: example
+        run: |
+          flutter pub get
+          flutter analyze --fatal-infos
+
+      - name: Test the example app with Material, Cupertino and widgets hosts
+        working-directory: example
+        run: flutter test
+
       - name: Build API documentation without warnings
         if: matrix.flutter-version == env.LATEST_FLUTTER_VERSION
         shell: bash

@@ -24,6 +24,8 @@
 # Generated output.
 /build/
 /coverage/
+/example/build/
+/example/pubspec.lock
 /doc/
 /packagetester/
 /package_tester/

@@ -1,5 +1,7 @@
 import 'package:dashronym/dashronym.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+
+import 'material_theme.dart';
 
 final acronyms = DashronymRegistry({
   'API': 'Application Programming Interface',
@@ -18,13 +20,21 @@ class DashronymExampleApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Dashronym example',
-      theme: ThemeData(colorSchemeSeed: Colors.indigo, useMaterial3: true),
-      // Provide the Dashronym theme to every route of the app.
+      theme: ThemeData(colorSchemeSeed: Colors.indigo),
+      darkTheme: ThemeData(
+        colorSchemeSeed: Colors.indigo,
+        brightness: Brightness.dark,
+      ),
+      localizationsDelegates: const [
+        DashronymLocalizations.delegate,
+        ...GlobalMaterialLocalizations.delegates,
+      ],
+      // Give every route a Material-styled Dashronym card. The builder runs
+      // below AnimatedTheme, so the card follows light and dark mode.
       builder: (context, child) => DashronymThemeScope(
-        data: const DashronymTheme(
-          acronymStyle: TextStyle(color: Colors.indigo),
-          tooltipMaxWidth: 360,
-        ),
+        data: dashronymThemeFromMaterial(
+          Theme.of(context),
+        ).copyWith(tooltipMaxWidth: 360),
         child: child!,
       ),
       home: DashronymScope(
