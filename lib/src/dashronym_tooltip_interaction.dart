@@ -17,16 +17,12 @@ typedef DashronymTooltipHideCallback =
 class DashronymTooltipInteraction {
   /// Creates an interaction coordinator.
   DashronymTooltipInteraction({
-    required VoidCallback showTooltip,
-    required DashronymTooltipHideCallback hideTooltip,
-    required bool Function() isAlive,
-    required Duration hoverShowDelay,
-    required Duration hoverHideDelay,
-  }) : _showTooltip = showTooltip,
-       _hideTooltip = hideTooltip,
-       _isAlive = isAlive,
-       _hoverShowDelay = hoverShowDelay,
-       _hoverHideDelay = hoverHideDelay;
+    required this._showTooltip,
+    required this._hideTooltip,
+    required this._isAlive,
+    required this._hoverShowDelay,
+    required this._hoverHideDelay,
+  });
 
   final VoidCallback _showTooltip;
   final DashronymTooltipHideCallback _hideTooltip;

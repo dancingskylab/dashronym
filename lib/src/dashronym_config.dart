@@ -70,8 +70,8 @@ class DashronymConfig {
     required this.enableBareAcronyms,
     required this.minLen,
     required this.maxLen,
-    required List<String> acceptMarkers,
-  }) : _acceptMarkers = acceptMarkers;
+    required this._acceptMarkers,
+  });
 
   /// Whether bare ALL-CAPS words are matched against the registry.
   ///

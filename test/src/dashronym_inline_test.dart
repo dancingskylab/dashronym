@@ -913,7 +913,7 @@ void main() {
     expect(find.byKey(tooltipKey), findsNothing);
   });
 
-  testWidgets('DashronymInline reacts to updates, metrics changes, and scrolls', (
+  testWidgets('reacts to updates, metrics changes, and scrolls', (
     tester,
   ) async {
     final themeNotifier = ValueNotifier(
